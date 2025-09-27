@@ -21,7 +21,7 @@ export default function Home() {
             .
           </li>
           <li className="tracking-[-.01em]">
-            Tes.
+            Tes 3.
           </li>
         </ol>
 
