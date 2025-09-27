@@ -1,7 +1,7 @@
 "use client"
 
 import { MenuCard, type MenuItem } from "./menu-card"
-import { motion } from "framer-motion"
+import { motion, Variants } from "framer-motion"
 
 const coffees: MenuItem[] = [
   {
@@ -66,7 +66,7 @@ const container = {
     transition: { staggerChildren: 0.08, delayChildren: 0.1 },
   },
 }
-const item = {
+const item : Variants = {
   hidden: { opacity: 0, y: 12 },
   show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 70, damping: 16 } },
 }
