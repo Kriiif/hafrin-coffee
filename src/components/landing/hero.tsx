@@ -1,0 +1,51 @@
+"use client"
+
+import { Button } from "@/components/ui/button"
+import { motion } from "framer-motion"
+
+export function Hero() {
+  return (
+    <section id="home" className="bg-muted/40">
+      <div className="mx-auto max-w-6xl px-4 py-16 grid md:grid-cols-2 gap-10 items-center">
+        {/* Text column */}
+        <motion.div
+          className="space-y-4"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.5 }}
+          transition={{ type: "spring", stiffness: 60, damping: 15 }}
+        >
+          <h1 className="text-3xl md:text-4xl font-semibold text-pretty">
+            Hafrin Coffee, ur <span className="text-accent font-bold">code</span> mate {"\u2615"}
+          </h1>
+          <p className="text-muted-foreground leading-relaxed">Code longer, fast deliver, taste that last forever.</p>
+          <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
+            <Button asChild className="bg-secondary text-secondary-foreground hover:opacity-90">
+              <a href="#about" aria-label="Learn more about us">
+                About Us
+              </a>
+            </Button>
+          </motion.div>
+        </motion.div>
+
+        {/* Image column */}
+        <motion.div
+          className="flex justify-center md:justify-end"
+          initial={{ opacity: 0, scale: 0.9 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true, amount: 0.4 }}
+          transition={{ type: "spring", stiffness: 90, damping: 14 }}
+        >
+          <div className="size-72 md:size-96 rounded-full ring-4 ring-primary/10 overflow-hidden grid place-items-center bg-secondary/50">
+            {/* Using a placeholder image to represent bottle on beans */}
+            <img
+              src={"/placeholder.svg?height=420&width=420&query=coffee bottle on coffee beans"}
+              alt="Bottle of iced coffee on a bed of roasted beans"
+              className="h-full w-full object-cover"
+            />
+          </div>
+        </motion.div>
+      </div>
+    </section>
+  )
+}
