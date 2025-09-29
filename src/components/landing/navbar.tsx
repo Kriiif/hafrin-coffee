@@ -7,8 +7,7 @@ export function Navbar() {
     <header className="sticky top-0 z-50 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
       <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
         <Link href="#" className="font-semibold tracking-wide">
-          <span className="text-lg">hafrin</span>
-          <span className="text-primary">.COFFEE</span>
+          <img src="/loghaf.png" alt="Hafrin Coffee Logo" className="h-16 w-24 object-contain" />
           <span className="sr-only">Hafrin Coffee</span>
         </Link>
         <nav aria-label="Main" className="text-sm">

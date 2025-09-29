@@ -14,9 +14,9 @@ export function MenuCard({ item }: { item: MenuItem }) {
     <Card className="overflow-hidden h-full transition-transform duration-300 will-change-transform hover:-translate-y-1">
       <CardHeader className="p-0">
         <img
-          src={`/.jpg?height=200&width=320&query=${encodeURIComponent(item.imageQuery)}`}
+          src={`/${item.imageQuery}.png`}
           alt={item.title}
-          className="h-40 w-full object-cover transition-transform duration-300 group-hover:scale-105"
+          className="h-40 w-full object-contain transition-transform duration-300 group-hover:scale-105"
         />
       </CardHeader>
       <CardContent className="p-4">

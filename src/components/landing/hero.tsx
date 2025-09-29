@@ -15,7 +15,7 @@ export function Hero() {
           viewport={{ once: true, amount: 0.5 }}
           transition={{ type: "spring", stiffness: 60, damping: 15 }}
         >
-          <h1 className="text-3xl md:text-4xl font-semibold text-pretty">
+          <h1 className="text-3xl md:text-4xl font-bold text-pretty text-black">
             Hafrin Coffee, ur <span className="text-accent font-bold">code</span> mate {"\u2615"}
           </h1>
           <p className="text-muted-foreground leading-relaxed">Code longer, fast deliver, taste that last forever.</p>
@@ -30,17 +30,16 @@ export function Hero() {
 
         {/* Image column */}
         <motion.div
-          className="flex justify-center md:justify-end"
+          className="flex justify-center md:justify-end align-items-start"
           initial={{ opacity: 0, scale: 0.9 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true, amount: 0.4 }}
           transition={{ type: "spring", stiffness: 90, damping: 14 }}
         >
-          <div className="size-72 md:size-96 rounded-full ring-4 ring-primary/10 overflow-hidden grid place-items-center bg-secondary/50">
+          <div className="size-80 md:size-80 rounded-full grid place-items-center">
             {/* Using a placeholder image to represent bottle on beans */}
             <img
-              src={"/placeholder.svg?height=420&width=420&query=coffee bottle on coffee beans"}
-              alt="Bottle of iced coffee on a bed of roasted beans"
+              src={"/hafrin.png"}
               className="h-full w-full object-cover"
             />
           </div>
