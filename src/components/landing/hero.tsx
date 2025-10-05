@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { motion } from "framer-motion"
+import { WhatsAppButton } from "./whatsapp-button" // Import the WhatsAppButton component
 
 export function Hero() {
   return (
@@ -37,14 +38,11 @@ export function Hero() {
           transition={{ type: "spring", stiffness: 90, damping: 14 }}
         >
           <div className="size-80 md:size-80 rounded-full grid place-items-center">
-            {/* Using a placeholder image to represent bottle on beans */}
-            <img
-              src={"/hafrin.png"}
-              className="h-full w-full object-cover"
-            />
+            <img src={"/hafrin.png"} className="h-full w-full object-cover" />
           </div>
         </motion.div>
       </div>
+      <WhatsAppButton /> {/* Add the WhatsAppButton here */}
     </section>
   )
 }

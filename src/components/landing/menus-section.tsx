@@ -1,7 +1,7 @@
 "use client"
 
 import { MenuCard, type MenuItem } from "./menu-card"
-import { motion, Variants } from "framer-motion"
+import { motion, type Variants } from "framer-motion"
 
 const coffees: MenuItem[] = [
   {
@@ -63,12 +63,12 @@ const container = {
   show: {
     opacity: 1,
     y: 0,
-    transition: { staggerChildren: 0.08, delayChildren: 0.1 },
+    transition: { staggerChildren: 0.15, delayChildren: 0.2 },
   },
 }
-const item : Variants = {
+const item: Variants = {
   hidden: { opacity: 0, y: 12 },
-  show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 70, damping: 16 } },
+  show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 50, damping: 12 } },
 }
 
 export function MenusSection() {
@@ -86,7 +86,14 @@ export function MenusSection() {
         </motion.div>
 
         <div className="space-y-6">
-          <h3 className="text-xl font-semibold">Coffees</h3>
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.4 }}
+            transition={{ type: "spring", stiffness: 60, damping: 15 }}
+          >
+            <h3 className="text-xl font-semibold">Coffees</h3>
+          </motion.div>
           <motion.div
             className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
             variants={container}
@@ -103,7 +110,14 @@ export function MenusSection() {
         </div>
 
         <div className="space-y-6">
-          <h3 className="text-xl font-semibold">Non-Coffees</h3>
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.4 }}
+            transition={{ type: "spring", stiffness: 60, damping: 15 }}
+          >
+            <h3 className="text-xl font-semibold">Non-Coffees</h3>
+          </motion.div>
           <motion.div
             className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
             variants={container}

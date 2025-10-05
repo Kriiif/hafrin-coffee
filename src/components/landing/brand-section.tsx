@@ -13,11 +13,7 @@ export function BrandSection() {
           transition={{ type: "spring", stiffness: 70, damping: 16 }}
           className="flex justify-center md:justify-end align-items-start flex-col w-90"
         >
-          <img
-            src="/team.jpg"
-            alt="Hafrin Coffee team at an event"
-            className="w-full max-w-sm rounded-lg border"
-          />
+          <img src="/team.jpg" alt="Hafrin Coffee team at an event" className="w-full max-w-sm rounded-lg border" />
           <p className="mt-3 text-xs text-black self-center">MIPA PRENEUR EXPO 2025</p>
         </motion.div>
         <motion.div
