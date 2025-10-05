@@ -13,22 +13,22 @@ export function Navbar() {
         <nav aria-label="Main" className="text-sm">
           <ul className="flex items-center gap-6">
             <li>
-              <a href="#home" className="hover:text-primary font-bold text-lg">
+              <a href="#home" className="hover:text-primary font-semibold text-lg">
                 Home
               </a>
             </li>
             <li>
-              <a href="#menus" className="hover:text-primary font-bold text-lg">
+              <a href="#menus" className="hover:text-primary font-semibold text-lg">
                 Menu
               </a>
             </li>
             <li>
-              <a href="#about" className="hover:text-primary font-bold text-lg">
+              <a href="#about" className="hover:text-primary font-semibold text-lg">
                 About Us
               </a>
             </li>
             <li>
-              <a href="#contact" className="hover:text-primary font-bold text-lg">
+              <a href="#contact" className="hover:text-primary font-semibold text-lg">
                 Contact
               </a>
             </li>
