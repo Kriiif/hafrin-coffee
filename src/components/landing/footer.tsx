@@ -4,7 +4,6 @@ export function SiteFooter() {
       <div className="mx-auto max-w-6xl px-4 py-6 text-sm text-black flex flex-col md:flex-row items-center justify-between gap-3">
         <p>&copy; {new Date().getFullYear()} Hafrin Coffee</p>
         <div className="flex items-center gap-6 text-black">
-          {/* Instagram Icon and Link (using SVG) */}
           <a href="https://www.instagram.com/hafrin.coffeee/" aria-label="@hafrin.coffee on Instagram" className="flex items-center gap-1">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -24,7 +23,6 @@ export function SiteFooter() {
             </svg>
             @hafrin.coffeee
           </a>
-          {/* TikTok Icon and Link (using PNG image) */}
           <a href="https://www.tiktok.com/@hafrin.coffee" aria-label="@hafrin.coffee on Tiktok" className="flex items-center gap-1">
             <img
               src="/tik-tok.png"
