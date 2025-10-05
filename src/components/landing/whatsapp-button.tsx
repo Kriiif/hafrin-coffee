@@ -1,9 +1,8 @@
 "use client"
 
 export function WhatsAppButton() {
-  const whatsappNumber = "+6281228778952" // Replace with actual WhatsApp number
-  const whatsappUrl = `https://wa.me/${whatsappNumber}`
   const preFilledMessage = encodeURIComponent("Permisi, saya (nama), ingin memesan (jenis kopi dan kuantitas) untuk hari (hari dan tanggal) jam (jam) di (lokasi). Terima kasih.");
+  const whatsappUrl = `https://wa.me/6281228778952?text=${preFilledMessage}` 
 
   return (
     <a
