@@ -15,36 +15,36 @@ const coffees: MenuItem[] = [
     id: "cappuccino-1",
     title: "Cappuccino",
     description: "Smooth espresso with silky milk foam.",
-    price: "Rp. 8,000.00",
-    imageQuery: "coffee1",
+    price: "Rp. 8.000.00",
+    imageQuery: "latte cappu",
   },
   {
     id: "butterscotch",
     title: "Butterscotch",
     description: "Balanced, creamy and aromatic.",
-    price: "Rp. 8,000.00",
-    imageQuery: "coffee1",
+    price: "Rp. 8.000,00",
+    imageQuery: "bs",
   },
   {
     id: "aren-latte",
     title: "Aren Latte",
     description: "Classic Italian-style with bold notes.",
     price: "Rp. 8,000.00",
-    imageQuery: "coffee1",
+    imageQuery: "aren latte",
   },
   {
     id: "moccacino",
     title: "Moccacino",
     description: "Velvety texture, rich espresso finish.",
-    price: "Rp. 8,000.00",
-    imageQuery: "coffee1",
+    price: "Rp. 8.000,00",
+    imageQuery: "mocca",
   },
   {
     id: "latte",
     title: "Latte",
     description: "Perfect for an afternoon pick-me-up.",
-    price: "Rp. 8,000.00",
-    imageQuery: "coffee1",
+    price: "Rp. 8.000,00",
+    imageQuery: "latte cappu",
   },
 ]
 
@@ -52,9 +52,17 @@ const nonCoffees: MenuItem[] = [
   {
     id: "chocolate",
     title: "Chocolate",
-    description: "With silky milk foam.",
-    price: "Rp. 8,000.00",
+    description: "Chocolatey goodness.",
+    price: "Rp. 8.000,00",
     imageQuery: "coffee1",
+  },
+
+    {
+    id: "matcha",
+    title: "Match Latte",
+    description: "Creamy and aromatic.",
+    price: "Rp. 8.000,00",
+    imageQuery: "matcha",
   },
 ]
 

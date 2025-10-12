@@ -16,7 +16,7 @@ export function MenuCard({ item }: { item: MenuItem }) {
         <img
           src={`/${item.imageQuery}.png`}
           alt={item.title}
-          className="h-40 w-full object-contain transition-transform duration-300 group-hover:scale-105"
+          className="h-60 w-full object-contain transition-transform duration-300 group-hover:scale-105"
         />
       </CardHeader>
       <CardContent className="p-4">
