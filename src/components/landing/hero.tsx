@@ -17,9 +17,9 @@ export function Hero() {
           transition={{ type: "spring", stiffness: 60, damping: 15 }}
         >
           <h1 className="text-3xl md:text-4xl font-bold text-pretty text-black">
-            Hafrin Coffee, ur <span className="text-accent font-bold">code</span> mate {"\u2615"}
+            Hafrin Coffee, <span className="text-accent font-bold">your code</span> mate {"\u2615"}
           </h1>
-          <p className="text-muted-foreground leading-relaxed">Code longer, fast deliver, taste that last forever.</p>
+          <p className="text-muted-foreground leading-relaxed">Code longer, delivered fast, a taste that lasts.</p>
           <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
             <Button asChild className="bg-secondary text-secondary-foreground hover:opacity-90">
               <a href="#about" aria-label="Learn more about us">

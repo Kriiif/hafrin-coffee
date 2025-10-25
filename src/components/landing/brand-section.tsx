@@ -4,17 +4,17 @@ import { motion } from "framer-motion"
 
 export function BrandSection() {
   return (
-    <section id="about" className="bg-muted/40">
+    <section id="about" className="bg-acent/40">
       <div className="mx-auto max-w-6xl px-4 py-16 grid md:grid-cols-2 gap-10 items-start">
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true, amount: 0.3 }}
           transition={{ type: "spring", stiffness: 70, damping: 16 }}
-          className="flex justify-center md:justify-end align-items-start flex-col w-90"
+          className="flex justify-center md:justify-end align-items-start flex-col w-full"
         >
           <img src="/team.jpg" alt="Hafrin Coffee team at an event" className="w-full max-w-sm rounded-lg border" />
-          <p className="mt-3 text-xs text-black self-center font-bold">MIPA PRENEUR EXPO 2025</p>
+          <p className="mt-3 text-xs text-black self-center font-bold mr-39">MIPA PRENEUR EXPO 2025</p>
         </motion.div>
         <motion.div
           className="space-y-4"

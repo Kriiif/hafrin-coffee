@@ -1,6 +1,6 @@
 export function SiteFooter() {
   return (
-    <footer id="contact" className="border-t">
+    <footer id="contact" className="border-t bg-acent/40">
       <div className="mx-auto max-w-6xl px-4 py-6 text-sm text-black flex flex-col md:flex-row items-center justify-between gap-3">
         <p>&copy; {new Date().getFullYear()} Hafrin Coffee</p>
         <div className="flex items-center gap-6 text-black">

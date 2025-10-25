@@ -9,8 +9,8 @@ export default function Page() {
     <main>
       <Navbar />
       <Hero />
-      <MenusSection />
       <BrandSection />
+      <MenusSection />
       <SiteFooter />
       <img
         src="/images/mockups/landing-reference.png"
