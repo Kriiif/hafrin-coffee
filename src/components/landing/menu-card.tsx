@@ -1,6 +1,8 @@
 "use client"
 
 import { useState } from "react"
+// 1. Import toast
+import { toast } from "react-hot-toast"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import {
@@ -28,6 +30,8 @@ export function MenuCard({ item }: { item: MenuItem }) {
   const [sugar, setSugar] = useState("normal")
   const [ice, setIce] = useState("normal")
   const [additions, setAdditions] = useState<string[]>([])
+  // 2. Add state to control the dialog
+  const [isOpen, setIsOpen] = useState(false)
 
   const toggleAddition = (value: string) => {
     setAdditions((prev) =>
@@ -35,39 +39,13 @@ export function MenuCard({ item }: { item: MenuItem }) {
     )
   }
 
-  const handleConfirm = async () => {
-    try {
-      const orderData = {
-        itemId: item.id,
-        title: item.title,
-        quantity,
-        sugar,
-        ice,
-        additions,
-      };
-
-      console.log("🟢 Sending order:", orderData); // <--- log ini
-
-      const res = await fetch("/api/order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(orderData),
-      });
-
-      const data = await res.json();
-      console.log("📩 Response from API:", data); // <--- log ini juga
-
-      if (!res.ok) {
-        console.error("Error:", data);
-        alert("Gagal kirim pesanan!");
-        return;
-      }
-
-      alert("Pesanan berhasil dikirim!");
-    } catch (err) {
-      console.error("Fetch failed:", err);
-      alert("Gagal mengirim pesanan (fetch error)");
-    }
+  // 3. This is the new "dummy" handler
+  const handleConfirm = () => {
+    // Just show a success toast immediately
+    toast.success("Pesanan berhasil dikirim!");
+    
+    // Close the dialog
+    setIsOpen(false);
   };
 
   return (
@@ -84,7 +62,8 @@ export function MenuCard({ item }: { item: MenuItem }) {
         <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{item.description}</p>
       </CardContent>
       <CardFooter className="p-4 pt-0">
-        <Dialog>
+        {/* 4. Control the Dialog's open/closed state */}
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
             <Button size="sm" className="ml-auto bg-secondary text-secondary-foreground hover:opacity-90">
               {item.price}
