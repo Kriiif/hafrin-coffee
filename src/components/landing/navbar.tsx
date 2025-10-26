@@ -101,6 +101,7 @@ export function Navbar({
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Log Out</span>
               </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem>
                 <Link href="/Login">
                   <LogIn className="mr-2 h-4 w-4" />
