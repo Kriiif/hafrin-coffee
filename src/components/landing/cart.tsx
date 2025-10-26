@@ -77,7 +77,7 @@ function CartItemRow({ item, checked, onCheckedChange, onQuantityChange, onRemov
           </Button>
           <Input 
             type="text" 
-            value={item.quantity} 
+            value={String(item.quantity)} 
             readOnly 
             className="h-8 w-12 text-center bg-acent rounded-none border-x-0 border-y border-secondary focus-visible:ring-0 p-0"  
           />
@@ -141,10 +141,16 @@ export function Cart() {
   const itemsToCheckout = cart.filter(item => selectedItems.includes(getItemUniqueId(item)));
   const subtotal = itemsToCheckout.reduce((sum, item) => sum + item.idProduct.price * item.quantity, 0);
 
-      const res = await fetch("/controller/order", {
+      if (!user) {
+        toast.error("User not found. Please login before checkout.");
+        return;
+      }
+
+      const res = await fetch("/api/order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
+          idUser: user._id,
           items: itemsToCheckout,
           totalAmount: subtotal
         }),
@@ -155,8 +161,20 @@ export function Cart() {
         throw new Error(error.message || "Checkout failed");
       }
 
-      // Remove checked out items from cart
-      await Promise.all(selectedItems.map(id => removeItem(id)));
+      // Remove checked out items from cart by calling removeItem with the
+      // original product id + options (sugar/ice/additions). We use the
+      // itemsToCheckout array so we have the full item objects to remove.
+      await Promise.all(itemsToCheckout.map(item =>
+        removeItem(
+          item.idProduct._id,
+          {
+            sugar: item.sugar,
+            ice: item.ice,
+            additions: [...item.additions].sort()
+          }
+        )
+      ));
+
       setSelectedItems([]);
       toast.success("Checkout berhasil!");
     } catch (err) {

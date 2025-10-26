@@ -1,8 +1,10 @@
 "use client"
 
-import React from 'react'
+import React, { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Navbar } from './navbar' 
 import { Button } from '@/components/ui/button' 
+import { useUser } from '@/app/controller/context/usercontext'
 // NEW: Import Dialog components
 import {
   Dialog,
@@ -153,70 +155,77 @@ function HistoryItemRow({ item }: HistoryItemRowProps) {
   )
 }
 
-// Dummy data for past orders
-const DUMMY_ORDERS: PastOrder[] = [
-  {
-    id: "ORD-001",
-    date: "2025-10-25",
-    status: "Completed",
-    totalAmount: 16000,
-    items: [
-      {
-        id: "1a",
-        name: "Cappucino",
-        pic: "hafrin", // Use a real image name from your /public folder
-        price: 8000,
-        quantity: 2,
-        sugar: "Normal",
-        ice: "Normal",
-        additions: []
-      }
-    ]
-  },
-  {
-    id: "ORD-002",
-    date: "2025-10-22",
-    status: "Completed",
-    totalAmount: 18000,
-    items: [
-      {
-        id: "2a",
-        name: "Cappucino",
-        pic: "hafrin", // Use a real image name from your /public folder
-        price: 8000,
-        quantity: 1,
-        sugar: "Less",
-        ice: "Normal",
-        additions: []
-      },
-      {
-        id: "2b",
-        name: "Matcha Latte",
-        pic: "hafrin", // Use a real image name from your /public folder
-        price: 10000,
-        quantity: 1,
-        sugar: "Normal",
-        ice: "Less",
-        additions: ["Oat Milk"]
-      }
-    ]
-  }
-];
+// We'll fetch real orders from the API for the logged-in user
 
 export function History() {
-  const orders = DUMMY_ORDERS;
+  const { user, loading: userLoading } = useUser();
+  const router = useRouter();
+  const [orders, setOrders] = useState<PastOrder[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!userLoading && !user) {
+      // redirect to login if not authenticated
+      router.push('/login');
+      return;
+    }
+
+    const fetchOrders = async () => {
+      if (!user) return;
+      try {
+        setLoading(true);
+        const res = await fetch(`/api/order?userId=${user._id}`);
+        const data = await res.json() as any;
+        if (!res.ok || !data?.success) {
+          console.error('Failed to fetch orders', data);
+          setOrders([]);
+          return;
+        }
+
+        // Map API orders to PastOrder shape expected by UI
+        const mapped: PastOrder[] = (data.orders || []).map((o: any) => ({
+          id: o._id,
+          date: new Date(o.createdAt).toLocaleDateString(),
+          items: (o.items || []).map((it: any, idx: number) => ({
+            id: `${o._id}-${idx}`,
+            name: it.idProduct?.name || 'Unknown',
+            pic: it.idProduct?.pic || 'hafrin',
+            price: it.idProduct?.price ?? 0,
+            quantity: it.quantity,
+            sugar: it.sugar || '',
+            ice: it.ice || '',
+            additions: Array.isArray(it.additions) ? it.additions : []
+          })),
+          totalAmount: o.totalAmount,
+          status: o.deliveryStatus || o.paymentStatus || 'pending'
+        }));
+
+        setOrders(mapped);
+      } catch (err) {
+        console.error('Error fetching orders:', err);
+        setOrders([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrders();
+  }, [user, userLoading, router]);
 
   return (
     <div className="min-h-screen bg-muted/40">
       <Navbar bgClass="bg-background" /> 
 
       <main className="mx-auto max-w-4xl p-4 md:p-8 space-y-4">
-        {orders.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            You have no past orders.
+        {loading ? (
+          <div className="space-y-4">
+            {[1, 2, 3].map((n) => (
+              <div key={n} className="bg-card animate-pulse h-32 rounded-lg" />
+            ))}
           </div>
+        ) : orders.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">You have no past orders.</div>
         ) : (
-
           <div className="space-y-6">
             {orders.map((order) => (
               <div key={order.id} className="bg-white/50 backdrop-blur-sm rounded-lg p-4 shadow">
@@ -233,10 +242,7 @@ export function History() {
 
                 <div className="space-y-4">
                   {order.items.map((item) => (
-                    <HistoryItemRow
-                      key={item.id}
-                      item={item}
-                    />
+                    <HistoryItemRow key={item.id} item={item} />
                   ))}
                 </div>
               </div>
