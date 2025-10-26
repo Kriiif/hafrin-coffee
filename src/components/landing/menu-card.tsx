@@ -35,6 +35,38 @@ export function MenuCard({ item }: { item: MenuItem }) {
     )
   }
 
+  const handleConfirm = async () => {
+  try {
+    const res = await fetch("/api/order", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        itemId: item.id,
+        title: item.title,
+        quantity,
+        sugar,
+        ice,
+        additions,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      console.error("Error:", data);
+      alert("Gagal kirim pesanan!");
+      return;
+    }
+
+    alert("Pesanan berhasil dikirim!");
+  } catch (err) {
+    console.error("Fetch failed:", err);
+    alert("Gagal mengirim pesanan (fetch error)");
+  }
+};
+
   return (
     <Card className="overflow-hidden h-full transition-transform duration-300 will-change-transform hover:-translate-y-1">
       <CardHeader className="p-0">
@@ -118,8 +150,10 @@ export function MenuCard({ item }: { item: MenuItem }) {
                   ))}
                 </div>
               </div>
-
-              <Button className="w-full bg-secondary text-secondary-foreground hover:opacity-90">
+              <Button
+                className="w-full bg-secondary text-secondary-foreground hover:opacity-90"
+                onClick={handleConfirm}
+              >
                 Confirm
               </Button>
             </div>
