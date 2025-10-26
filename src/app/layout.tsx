@@ -3,10 +3,11 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 import { Toaster } from 'react-hot-toast';
+import { CartProvider } from "@/context/cartcontext" // ⬅️ Tambahin ini
 
 export const metadata: Metadata = {
   title: 'Hafrin Coffee',
-  description: 'Hafrin coffee'
+  description: 'Hafrin coffee',
 }
 
 const geistSans = Geist({
@@ -27,9 +28,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        {children}
-        <Analytics />
-        <Toaster position="bottom-center" />
+        <CartProvider>
+          {children}
+          <Analytics />
+          <Toaster position="bottom-center" />
+        </CartProvider>
       </body>
     </html>
   )

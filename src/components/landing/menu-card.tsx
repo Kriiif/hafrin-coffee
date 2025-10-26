@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
+import { useCart } from "@/context/cartcontext"
 
 export type MenuItem = {
   id: string
@@ -38,15 +39,22 @@ export function MenuCard({ item }: { item: MenuItem }) {
       prev.includes(value) ? prev.filter((a) => a !== value) : [...prev, value]
     )
   }
+  
+  const { addToCart } = useCart()
 
-  // 3. This is the new "dummy" handler
   const handleConfirm = () => {
-    // Just show a success toast immediately
-    toast.success("Pesanan berhasil dikirim!");
-    
-    // Close the dialog
-    setIsOpen(false);
-  };
+    addToCart({
+      title: item.title,
+      quantity,
+      sugar,
+      ice,
+      additions,
+      price: parseInt(item.price.replace("Rp", "").replace(".", "")) || 0,
+    })
+
+    toast.success("Pesanan ditambahkan ke keranjang!")
+    setIsOpen(false)
+  }
 
   return (
     <Card className="overflow-hidden h-full transition-transform duration-300 will-change-transform hover:-translate-y-1">
