@@ -1,22 +1,26 @@
 import mongoose from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI!;
+const MONGODB_URI = process.env.MONGODB_URI!; // tanda seru biar TS tahu ini pasti ada
 
 if (!MONGODB_URI) {
-  throw new Error("❌ Please define the MONGODB_URI in .env.local");
+  throw new Error("❌ MONGODB_URI is not defined in .env.local");
 }
 
-let cached = (global as any).mongoose || { conn: null, promise: null };
+let isConnected = false; 
 
 export async function connectDB() {
-  if (cached.conn) return cached.conn;
-
-  if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGODB_URI, {
-      dbName: "hafrin-coffee",
-    }).then((mongoose) => mongoose);
+  if (isConnected) {
+    console.log("⚡ MongoDB already connected");
+    return;
   }
 
-  cached.conn = await cached.promise;
-  return cached.conn;
+  try {
+    const db = await mongoose.connect(MONGODB_URI);
+    isConnected = db.connection.readyState === 1;
+
+    console.log("✅ MongoDB Connected");
+  } catch (err) {
+    console.error("❌ MongoDB connection error:", err);
+    throw err; // penting! biar ketangkep di catch route.ts
+  }
 }
