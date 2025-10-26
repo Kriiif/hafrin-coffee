@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI!; // tanda seru biar TS tahu ini pasti ada
+const MONGODB_URI = process.env.MONGODB_URI!; 
 
 if (!MONGODB_URI) {
   throw new Error("❌ MONGODB_URI is not defined in .env.local");
@@ -21,6 +21,6 @@ export async function connectDB() {
     console.log("✅ MongoDB Connected");
   } catch (err) {
     console.error("❌ MongoDB connection error:", err);
-    throw err; // penting! biar ketangkep di catch route.ts
+    throw err; 
   }
 }

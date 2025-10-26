@@ -36,36 +36,39 @@ export function MenuCard({ item }: { item: MenuItem }) {
   }
 
   const handleConfirm = async () => {
-  try {
-    const res = await fetch("/api/order", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
+    try {
+      const orderData = {
         itemId: item.id,
         title: item.title,
         quantity,
         sugar,
         ice,
         additions,
-      }),
-    });
+      };
 
-    const data = await res.json();
+      console.log("🟢 Sending order:", orderData); // <--- log ini
 
-    if (!res.ok) {
-      console.error("Error:", data);
-      alert("Gagal kirim pesanan!");
-      return;
+      const res = await fetch("/api/order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(orderData),
+      });
+
+      const data = await res.json();
+      console.log("📩 Response from API:", data); // <--- log ini juga
+
+      if (!res.ok) {
+        console.error("Error:", data);
+        alert("Gagal kirim pesanan!");
+        return;
+      }
+
+      alert("Pesanan berhasil dikirim!");
+    } catch (err) {
+      console.error("Fetch failed:", err);
+      alert("Gagal mengirim pesanan (fetch error)");
     }
-
-    alert("Pesanan berhasil dikirim!");
-  } catch (err) {
-    console.error("Fetch failed:", err);
-    alert("Gagal mengirim pesanan (fetch error)");
-  }
-};
+  };
 
   return (
     <Card className="overflow-hidden h-full transition-transform duration-300 will-change-transform hover:-translate-y-1">

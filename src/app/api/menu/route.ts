@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server"
 
-// GET /api/menu
 export async function GET() {
-  // Contoh data menu (sementara hardcoded)
   const menu = [
     {
       id: "latte01",
