@@ -8,6 +8,7 @@ import {
   Info,
   BookMarked,
   LogOut,
+  LogIn,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -99,6 +100,12 @@ export function Navbar({
               <DropdownMenuItem>
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Log Out</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <Link href="/Login">
+                  <LogIn className="mr-2 h-4 w-4" />
+                  <span>Log In</span>
+                </Link>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
