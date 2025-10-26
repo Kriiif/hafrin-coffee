@@ -16,13 +16,13 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { useCart } from "@/context/cartcontext"
+import { useCart } from "@/app/controller/context/cartcontext"
 
 export type MenuItem = {
   id: string
   title: string
   description: string
-  price: string
+  price: number
   imageQuery: string
 }
 
@@ -44,12 +44,16 @@ export function MenuCard({ item }: { item: MenuItem }) {
 
   const handleConfirm = () => {
     addToCart({
-      title: item.title,
       quantity,
       sugar,
       ice,
       additions,
-      price: parseInt(item.price.replace("Rp", "").replace(".", "")) || 0,
+      idProduct: {
+        _id: item.id,
+        name: item.title,
+        price: item.price,
+        pic: item.imageQuery
+      }
     })
 
     toast.success("Pesanan ditambahkan ke keranjang!")
@@ -73,8 +77,13 @@ export function MenuCard({ item }: { item: MenuItem }) {
         {/* 4. Control the Dialog's open/closed state */}
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
-            <Button size="sm" className="ml-auto bg-secondary text-secondary-foreground hover:opacity-90">
-              {item.price}
+              <Button size="sm" className="ml-auto bg-secondary text-secondary-foreground hover:opacity-90">
+              {new Intl.NumberFormat("id-ID", {
+                style: "currency",
+                currency: "IDR",
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0,
+              }).format(item.price)}
             </Button>
           </DialogTrigger>
 

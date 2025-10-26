@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 import { Toaster } from 'react-hot-toast';
-import { CartProvider } from "@/context/cartcontext" // ⬅️ Tambahin ini
+import { CartProvider } from '@/app/controller/context/cartcontext';
 
 export const metadata: Metadata = {
   title: 'Hafrin Coffee',

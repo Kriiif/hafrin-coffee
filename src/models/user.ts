@@ -9,7 +9,6 @@ const UserSchema = new mongoose.Schema(
     gender: { type: String, enum: ["male", "female", "other"], default: "other" },
     phone: { type: String },
     address: { type: String },
-    createdAt: { type: Date, default: Date.now },
   },
   { collection: "users" }
 );

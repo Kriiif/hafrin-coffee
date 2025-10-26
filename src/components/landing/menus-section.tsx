@@ -1,72 +1,9 @@
 "use client"
 
-import { MenuCard, type MenuItem } from "./menu-card"
+import { useEffect, useState } from "react"
 import { motion, type Variants } from "framer-motion"
-
-const coffees: MenuItem[] = [
-  {
-    id: "americano",
-    title: "Americano",
-    description: "Made from one shot of good quality espresso and 5 oz hot water.",
-    price: "Rp 8.000",
-    imageQuery: "coffee1",
-  },
-  {
-    id: "cappuccino-1",
-    title: "Cappuccino",
-    description: "Smooth espresso with silky milk foam.",
-    price: "Rp 8.000",
-    imageQuery: "latte cappu",
-  },
-  {
-    id: "butterscotch",
-    title: "Butterscotch",
-    description: "Balanced, creamy and aromatic.",
-    price: "Rp 8.000",
-    imageQuery: "bs",
-  },
-  {
-    id: "aren-latte",
-    title: "Aren Latte",
-    description: "Classic Italian-style with bold notes.",
-    price: "Rp 8.000",
-    imageQuery: "aren latte",
-  },
-  {
-    id: "moccacino",
-    title: "Moccacino",
-    description: "Velvety texture, rich espresso finish.",
-    price: "Rp 8.000",
-    imageQuery: "mocca",
-  },
-  {
-    id: "latte",
-    title: "Latte",
-    description: "Perfect for an afternoon pick-me-up.",
-    price: "Rp 8.000",
-    imageQuery: "latte cappu",
-  },
-]
-
-const nonCoffees: MenuItem[] = [
-  {
-    id: "chocolate",
-    title: "Chocolate",
-    description: "Chocolatey goodness.",
-    price: "Rp 8.000",
-    // Catatan: Pastikan 'imageQuery' ini benar. Saat ini menggunakan gambar "coffee1" (Americano).
-    // Anda mungkin ingin mengubahnya ke "chocolate" atau nama file gambar cokelat Anda.
-    imageQuery: "coffee1",
-  },
-
-  {
-    id: "matcha",
-    title: "Match Latte",
-    description: "Creamy and aromatic.",
-    price: "Rp 8.000",
-    imageQuery: "matcha",
-  },
-]
+import { Skeleton } from "@/components/ui/skeleton"
+import { MenuCard, type MenuItem } from "./menu-card"
 
 const container = {
   hidden: { opacity: 0, y: 10 },
@@ -76,12 +13,53 @@ const container = {
     transition: { staggerChildren: 0.15, delayChildren: 0.2 },
   },
 }
+
 const item: Variants = {
   hidden: { opacity: 0, y: 12 },
   show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 50, damping: 12 } },
 }
 
 export function MenusSection() {
+  const [menus, setMenus] = useState<MenuItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
+
+  useEffect(() => {
+    const fetchMenus = async () => {
+      try {
+        const res = await fetch("/controller/menu")
+        const data = await res.json() as { success: boolean; menus: MenuItem[]; error?: string }
+        
+        if (!data.success) {
+          throw new Error(data.error || "Failed to fetch menus")
+        }
+        
+        setMenus(data.menus)
+      } catch (err) {
+        console.error("Error fetching menus:", err)
+        setError("Failed to load menus")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchMenus()
+  }, [])
+
+  // Split menus into coffee and non-coffee items
+  const coffees = menus.filter(item => 
+    item.title.toLowerCase().includes("coffee") || 
+    !["matcha", "chocolate"].some(type => 
+      item.title.toLowerCase().includes(type)
+    )
+  )
+
+  const nonCoffees = menus.filter(item => 
+    !item.title.toLowerCase().includes("coffee") && 
+    ["matcha", "chocolate"].some(type => 
+      item.title.toLowerCase().includes(type)
+    )
+  )
   return (
     <section id="menus" className="bg-muted/40 py-16">
       <div className="mx-auto max-w-6xl px-4 space-y-10">
@@ -95,53 +73,81 @@ export function MenusSection() {
           <h2 className="text-2xl font-semibold">Our Menus</h2>
         </motion.div>
 
-        <div className="space-y-6">
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.4 }}
-            transition={{ type: "spring", stiffness: 60, damping: 15 }}
-          >
-            <h3 className="text-xl font-semibold">Coffees</h3>
-          </motion.div>
-          <motion.div
-            className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
-            variants={container}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, amount: 0.2 }}
-          >
-            {coffees.map((itemData) => (
-              <motion.div key={itemData.id} variants={item}>
-                <MenuCard item={itemData} />
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
+        {loading ? (
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-xl font-semibold mb-6">Loading Menus...</h3>
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="space-y-4">
+                    <Skeleton className="h-60 w-full" />
+                    <Skeleton className="h-4 w-2/3" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-8 w-24 ml-auto" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : error ? (
+          <div className="text-center py-10">
+            <p className="text-lg text-red-500">{error}</p>
+          </div>
+        ) : (
+          <>
+            {coffees.length > 0 && (
+              <div className="space-y-6">
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.4 }}
+                  transition={{ type: "spring", stiffness: 60, damping: 15 }}
+                >
+                  <h3 className="text-xl font-semibold">Coffees</h3>
+                </motion.div>
+                <motion.div
+                  className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+                  variants={container}
+                  initial="hidden"
+                  whileInView="show"
+                  viewport={{ once: true, amount: 0.2 }}
+                >
+                  {coffees.map((itemData) => (
+                    <motion.div key={itemData.id} variants={item}>
+                      <MenuCard item={itemData} />
+                    </motion.div>
+                  ))}
+                </motion.div>
+              </div>
+            )}
 
-        <div className="space-y-6">
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.4 }}
-            transition={{ type: "spring", stiffness: 60, damping: 15 }}
-          >
-            <h3 className="text-xl font-semibold">Non-Coffees</h3>
-          </motion.div>
-          <motion.div
-            className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
-            variants={container}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, amount: 0.2 }}
-          >
-            {nonCoffees.map((itemData) => (
-              <motion.div key={itemData.id} variants={item}>
-                <MenuCard item={itemData} />
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
+            {nonCoffees.length > 0 && (
+              <div className="space-y-6">
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.4 }}
+                  transition={{ type: "spring", stiffness: 60, damping: 15 }}
+                >
+                  <h3 className="text-xl font-semibold">Non-Coffees</h3>
+                </motion.div>
+                <motion.div
+                  className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+                  variants={container}
+                  initial="hidden"
+                  whileInView="show"
+                  viewport={{ once: true, amount: 0.2 }}
+                >
+                  {nonCoffees.map((itemData) => (
+                    <motion.div key={itemData.id} variants={item}>
+                      <MenuCard item={itemData} />
+                    </motion.div>
+                  ))}
+                </motion.div>
+              </div>
+            )}
+          </>
+        )}
       </div>
     </section>
   )
