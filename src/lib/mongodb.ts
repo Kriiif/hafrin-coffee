@@ -15,7 +15,9 @@ export async function connectDB() {
   }
 
   try {
-    const db = await mongoose.connect(MONGODB_URI);
+    const db = await mongoose.connect(MONGODB_URI, {
+      dbName: "hafrincoffee",
+    });
     isConnected = db.connection.readyState === 1;
 
     console.log("✅ MongoDB Connected");

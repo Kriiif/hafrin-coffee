@@ -2,11 +2,9 @@ import mongoose from "mongoose";
 
 const OrderSchema = new mongoose.Schema(
   {
-    title: { type: String, required: true }, // nama minuman
-    quantity: { type: Number, required: true },
-    sugar: { type: String, enum: ["less", "normal"], default: "normal" },
-    ice: { type: String, enum: ["no", "normal"], default: "normal" },
-    additions: { type: [String], default: [] },
+    idCart: { type: mongoose.Schema.Types.ObjectId, ref: "Cart", required: true },
+    totalAmount: { type: Number, required: true },
+    status: { type: String, enum: ["pending", "completed", "canceled"], default: "pending" },
     createdAt: { type: Date, default: Date.now },
   },
   { collection: "orders" }
