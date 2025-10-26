@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import {
   ShoppingCart,
   User,
@@ -28,6 +29,22 @@ interface NavbarProps {
 export function Navbar({
   bgClass = "bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60",
 }: NavbarProps) {
+  // 2. Initialize the router
+  const router = useRouter()
+
+  // 3. Create a handler function for logging out
+  const handleLogout = () => {
+    // ---
+    // TODO: Add your actual logout logic here
+    // (e.g., clearing localStorage, removing cookies, etc.)
+    // Example: localStorage.removeItem('user-token')
+    // ---
+    console.log("Logging out...")
+
+    // After logic, redirect to the Login page
+    router.push("/login") // <-- CHANGED: Use lowercase "/login"
+  }
+
   return (
     <header className={`sticky top-0 z-50 border-b ${bgClass}`}>
       <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
@@ -60,11 +77,9 @@ export function Navbar({
                 <User className="h-7 w-7" />
               </Button>
             </DropdownMenuTrigger>
-            {/* 3. Set a consistent width */}
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              {/* 4. Group account-related items */}
               <DropdownMenuGroup>
                 <DropdownMenuItem asChild>
                   <Link href="/profile">
@@ -80,7 +95,6 @@ export function Navbar({
                 </DropdownMenuItem>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
-              {/* 5. Group navigation items */}
               <DropdownMenuGroup>
                 <DropdownMenuItem asChild>
                   <Link href="/#about">
@@ -96,17 +110,12 @@ export function Navbar({
                 </DropdownMenuItem>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
-              {/* 6. Add icon to logout */}
-              <DropdownMenuItem>
+
+              {/* 4. Add the onClick handler to the Log Out item */}
+              <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
+                {/* <-- CHANGED: Removed the empty <Link> tag */}
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Log Out</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <Link href="/Login">
-                  <LogIn className="mr-2 h-4 w-4" />
-                  <span>Log In</span>
-                </Link>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
