@@ -1,7 +1,9 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react"
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react"
 import { toast } from "sonner"
+import { useUser } from "@/app/controller/context/usercontext"
+import { useRouter } from "next/navigation"
 
 export type CartItem = {
   quantity: number
@@ -20,48 +22,36 @@ type CartContextType = {
   cart: CartItem[]
   loading: boolean
   addToCart: (item: CartItem) => Promise<void>
-  updateQuantity: (idProduct: string, quantity: number) => Promise<void>
-  removeItem: (idProduct: string) => Promise<void>
+  updateQuantity: (idProduct: string, quantity: number, customizations?: { sugar: string; ice: string; additions: string[] }) => Promise<void>
+  removeItem: (idProduct: string, customizations?: { sugar: string; ice: string; additions: string[] }) => Promise<void>
   clearCart: () => Promise<void>
   total: number
 }
-
-// For development, we'll use a fixed user ID
-// In production, this should come from your auth system
-const DEMO_USER_ID = "68fe26ccef947ad3ac0b44b8"; // Test user ID
 
 const CartContext = createContext<CartContextType | undefined>(undefined)
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [cart, setCart] = useState<CartItem[]>([])
   const [loading, setLoading] = useState(true)
+  const { user } = useUser()
+  const router = useRouter()
 
   // Calculate total
   const total = cart.reduce((sum, item) => sum + item.idProduct.price * item.quantity, 0)
 
-  // Fetch cart on mount
-  useEffect(() => {
-    fetchCart()
-  }, [])
+  // Fetch cart on mount and when user changes. Make fetchCart stable via useCallback
+  const fetchCart = useCallback(async () => {
+    if (!user) {
+      setCart([])
+      setLoading(false)
+      return
+    }
 
-  type ApiResponse = {
-    success: boolean;
-    cart?: {
-      _id: string;
-      idUser: string;
-      items: CartItem[];
-      createdAt: string;
-      updatedAt: string;
-    };
-    error?: string;
-  }
-
-  const fetchCart = async () => {
     try {
       setLoading(true)
-      console.log("🔍 Fetching cart for user:", DEMO_USER_ID)
+      console.log("🔍 Fetching cart for user:", user._id)
       
-      const res = await fetch(`/controller/cart?idUser=${DEMO_USER_ID}`)
+      const res = await fetch(`/controller/cart?idUser=${user._id}`)
       const data = await res.json() as ApiResponse
       
       console.log("📦 Cart data received:", data)
@@ -80,9 +70,32 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setLoading(false)
     }
+  }, [user?._id])
+
+  useEffect(() => {
+    // call the stable fetch function whenever the user id changes
+    fetchCart()
+  }, [fetchCart])
+
+  type ApiResponse = {
+    success: boolean;
+    cart?: {
+      _id: string;
+      idUser: string;
+      items: CartItem[];
+      createdAt: string;
+      updatedAt: string;
+    };
+    error?: string;
   }
 
   const addToCart = async (item: CartItem) => {
+    if (!user) {
+      toast.error("Please login to add items to cart");
+      router.push("/login");
+      return;
+    }
+
     try {
       setLoading(true)
       // Always add as new item and let the server handle combinations
@@ -90,7 +103,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          idUser: DEMO_USER_ID,
+          idUser: user._id,
           idProduct: item.idProduct._id,
           pic: item.idProduct.pic || item.idProduct.name.toLowerCase(),
           quantity: item.quantity,
@@ -122,41 +135,74 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
   }
 
-  const updateQuantity = async (idProduct: string, quantity: number) => {
+  const updateQuantity = async (idProduct: string, quantity: number, customizations?: { sugar: string; ice: string; additions: string[] }) => {
+    if (!user) {
+      toast.error("Please login to update cart");
+      router.push("/login");
+      return;
+    }
+
+    // Update local state immediately for better UX
+    setCart(currentCart => 
+      currentCart.map(item => {
+        if (customizations) {
+          // If customizations provided, match exactly
+          const isMatch = item.idProduct._id === idProduct &&
+            item.sugar === customizations.sugar &&
+            item.ice === customizations.ice &&
+            JSON.stringify([...item.additions].sort()) === JSON.stringify([...customizations.additions].sort());
+          
+          return isMatch ? { ...item, quantity } : item;
+        } else {
+          // Backward compatibility: if no customizations provided, match by ID only
+          return item.idProduct._id === idProduct ? { ...item, quantity } : item;
+        }
+      })
+    );
+
     try {
-      setLoading(true)
       const res = await fetch("/controller/cart", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          idUser: DEMO_USER_ID,
+          idUser: user._id,
           idProduct,
           quantity,
+          customizations: customizations || undefined,
         }),
-      })
-      const data = await res.json() as ApiResponse
-      if (data.success) {
-        await fetchCart()
-      } else {
-        throw new Error(data.error || "Failed to update quantity")
+      });
+
+      const data = await res.json() as ApiResponse;
+      
+      if (!data.success) {
+        // If server update fails, revert the local change
+        await fetchCart();
+        throw new Error(data.error || "Failed to update quantity");
       }
     } catch (err) {
-      console.error("Failed to update quantity:", err)
-      toast.error("Failed to update quantity")
-    } finally {
-      setLoading(false)
+      console.error("Failed to update quantity:", err);
+      toast.error("Failed to update quantity");
+      // Revert local state on error
+      await fetchCart();
     }
   }
 
-  const removeItem = async (idProduct: string) => {
+  const removeItem = async (idProduct: string, customizations?: { sugar: string; ice: string; additions: string[] }) => {
+    if (!user) {
+      toast.error("Please login to remove items");
+      router.push("/login");
+      return;
+    }
+
     try {
       setLoading(true)
       const res = await fetch("/controller/cart", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          idUser: DEMO_USER_ID,
+          idUser: user._id,
           idProduct,
+          customizations
         }),
       })
       const data = await res.json() as ApiResponse
@@ -175,13 +221,19 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   }
 
   const clearCart = async () => {
+    if (!user) {
+      toast.error("Please login to clear cart");
+      router.push("/login");
+      return;
+    }
+
     try {
       setLoading(true)
       const res = await fetch("/controller/cart", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          idUser: DEMO_USER_ID,
+          idUser: user._id,
           deleteCart: true,
         }),
       })

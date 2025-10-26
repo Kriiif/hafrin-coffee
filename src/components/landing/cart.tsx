@@ -1,8 +1,10 @@
 "use client"
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Navbar } from './navbar'
 import { Checkbox } from '@/components/ui/checkbox'
+import { useUser } from '@/app/controller/context/usercontext'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Minus, Plus, Trash2 } from 'lucide-react'
@@ -109,9 +111,20 @@ function CartItemRow({ item, checked, onCheckedChange, onQuantityChange, onRemov
 export function Cart() {
   const { cart, loading, updateQuantity, removeItem } = useCart();
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const { user, loading: userLoading } = useUser();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!userLoading && !user) {
+      toast.error("Please login to view your cart");
+      router.push("/login");
+    }
+  }, [user, userLoading, router]);
 
   const getItemUniqueId = (item: CartItem) => {
-    return `${item.idProduct._id}-${item.sugar}-${item.ice}-${item.additions.sort().join(',')}`; 
+    // Create a stable unique identifier by sorting additions consistently
+    const sortedAdditions = [...item.additions].sort();
+    return `${item.idProduct._id}-${item.sugar}-${item.ice}-${sortedAdditions.join(',')}`; 
   };
 
   const handleSelectAll = (checked: boolean) => {
@@ -169,18 +182,51 @@ export function Cart() {
           </div>
         ) : (
           <>
-            <div className="bg-card text-card-foreground rounded-lg p-4 flex items-center space-x-3 border">
-              <Checkbox 
-                id="selectAll" 
-                checked={selectedItems.length === cart.length && cart.length > 0}
-                onCheckedChange={handleSelectAll}
-              />
-              <label
-                htmlFor="selectAll"
-                className="text-md font-medium text-foreground leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Pilih Semua
-              </label>
+            <div className="bg-card text-card-foreground rounded-lg p-4 flex items-center justify-between border">
+              <div className="flex items-center space-x-3">
+                <Checkbox 
+                  id="selectAll" 
+                  checked={selectedItems.length === cart.length && cart.length > 0}
+                  onCheckedChange={handleSelectAll}
+                />
+                <label
+                  htmlFor="selectAll"
+                  className="text-md font-medium text-foreground leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Pilih Semua
+                </label>
+              </div>
+              {selectedItems.length > 0 && (
+                <Button
+                  variant="ghost"
+                  className="text-destructive hover:text-destructive"
+                  onClick={async () => {
+                    try {
+                      const itemsToDelete = cart.filter(item => selectedItems.includes(getItemUniqueId(item)));
+                      
+                      // Process deletions sequentially to avoid race conditions
+                      for (const item of itemsToDelete) {
+                        await removeItem(
+                          item.idProduct._id,
+                          {
+                            sugar: item.sugar,
+                            ice: item.ice,
+                            additions: [...item.additions].sort() // Sort to ensure consistent comparison
+                          }
+                        );
+                      }
+                      
+                      setSelectedItems([]);
+                      toast.success("Selected items removed");
+                    } catch (error) {
+                      console.error('Error removing selected items:', error);
+                      toast.error('Failed to remove some items');
+                    }
+                  }}
+                >
+                  <Trash2 className="h-5 w-5" />
+                </Button>
+              )}
             </div>
 
             {cart.length === 0 ? (
@@ -200,8 +246,20 @@ export function Cart() {
                         : prev.filter(id => id !== getItemUniqueId(item))
                     );
                   }}
-                  onQuantityChange={(quantity) => updateQuantity(item.idProduct._id, quantity)}
-                  onRemove={() => removeItem(item.idProduct._id)}
+                  onQuantityChange={(quantity) => updateQuantity(
+                    item.idProduct._id, 
+                    quantity,
+                    {
+                      sugar: item.sugar,
+                      ice: item.ice,
+                      additions: item.additions
+                    }
+                  )}
+                  onRemove={() => removeItem(item.idProduct._id, {
+                    sugar: item.sugar,
+                    ice: item.ice,
+                    additions: item.additions
+                  })}
                 />
               ))
             )}

@@ -1,23 +1,80 @@
 "use client"
 
 import React, { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { User, Lock, Eye, EyeOff } from 'lucide-react' 
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { User, Lock, Eye, EyeOff, Mail, Phone, MapPin, UserCircle } from 'lucide-react'
+import { toast } from 'sonner'
+
+type FormData = {
+  username: string
+  name: string
+  email: string
+  password: string
+  gender: string
+  phone: string
+  address: string
+}
 
 export function RegisterPage() {
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
-  const [message, setMessage] = useState('')
+  const router = useRouter()
+  const [formData, setFormData] = useState<FormData>({
+    username: '',
+    name: '',
+    email: '',
+    password: '',
+    gender: 'other',
+    phone: '',
+    address: ''
+  })
   const [showPassword, setShowPassword] = useState(false)
+  const [loading, setLoading] = useState(false)
+
+  const handleChange = (field: keyof FormData) => (
+    e: React.ChangeEvent<HTMLInputElement> | string
+  ) => {
+    const value = typeof e === 'string' ? e : e.target.value
+    setFormData(prev => ({ ...prev, [field]: value }))
+  }
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
-    setMessage('') 
-    console.log({ username, password })
-    setMessage('Registration successful! Please login.')
+    setLoading(true)
+
+    try {
+      const res = await fetch('/api/user/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      })
+
+      const data = await res.json() as {
+        success: boolean;
+        user?: {
+          _id: string;
+          username: string;
+          name: string;
+          email: string;
+        };
+        error?: string;
+      }
+
+      if (!data.success) {
+        throw new Error(data.error || 'Registration failed')
+      }
+
+      toast.success('Registration successful! Please login.')
+      router.push('/login')
+    } catch (err) {
+      console.error('Registration error:', err)
+      toast.error(err instanceof Error ? err.message : 'Registration failed')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const togglePasswordVisibility = () => {
@@ -35,7 +92,6 @@ export function RegisterPage() {
                 alt="Hafrin Coffee Logo" 
                 className="h-20 w-auto" 
               />
-
           </div>
           
           <div className="text-center space-y-1">
@@ -56,9 +112,42 @@ export function RegisterPage() {
                   id="username"
                   type="text"
                   required
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  value={formData.username}
+                  onChange={e => handleChange('username')(e)}
                   className="pl-10"
+                  placeholder="Enter your username"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="name">Full Name</Label>
+              <div className="relative">
+                <UserCircle className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input
+                  id="name"
+                  type="text"
+                  required
+                  value={formData.name}
+                  onChange={e => handleChange('name')(e)}
+                  className="pl-10"
+                  placeholder="Enter your full name"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input
+                  id="email"
+                  type="email"
+                  required
+                  value={formData.email}
+                  onChange={e => handleChange('email')(e)}
+                  className="pl-10"
+                  placeholder="Enter your email"
                 />
               </div>
             </div>
@@ -71,11 +160,11 @@ export function RegisterPage() {
                   id="password"
                   type={showPassword ? "text" : "password"}
                   required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  value={formData.password}
+                  onChange={e => handleChange('password')(e)}
                   className="pl-10 pr-10"
+                  placeholder="Create a password"
                 />
-
                 <button
                   type="button"
                   onClick={togglePasswordVisibility}
@@ -86,18 +175,57 @@ export function RegisterPage() {
                 </button>
               </div>
             </div>
-            
-            {message && (
-              <p className="text-sm font-medium text-green-600">
-                {message}
-              </p>
-            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="gender">Gender</Label>
+              <Select value={formData.gender} onValueChange={value => handleChange('gender')(value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select your gender" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="male">Male</SelectItem>
+                  <SelectItem value="female">Female</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone Number</Label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input
+                  id="phone"
+                  type="tel"
+                  value={formData.phone}
+                  onChange={e => handleChange('phone')(e)}
+                  className="pl-10"
+                  placeholder="Enter your phone number"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="address">Address</Label>
+              <div className="relative">
+                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input
+                  id="address"
+                  type="text"
+                  value={formData.address}
+                  onChange={e => handleChange('address')(e)}
+                  className="pl-10"
+                  placeholder="Enter your address"
+                />
+              </div>
+            </div>
 
             <Button
               type="submit"
               className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90"
+              disabled={loading}
             >
-              Create Account
+              {loading ? 'Creating Account...' : 'Create Account'}
             </Button>
           </form>
 

@@ -2,29 +2,20 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { User } from "@/models/user";
 import { connectDB } from "@/lib/mongodb";
-import { Types } from "mongoose";
-
-interface UserDocument {
-  _id: Types.ObjectId;
-  username: string;
-  name: string;
-  email: string;
-  password: string;
-}
+import type { UserDocument, SafeUser } from "@/types/user";
 
 export async function GET() {
   try {
     const cookieStore = await cookies();
-    const sessionId = cookieStore.get("session")?.value;
-    
-    if (!sessionId) {
+    const sessionCookie = cookieStore.get("session");
+
+    if (!sessionCookie?.value) {
       return NextResponse.json({ success: false, error: "Not authenticated" }, { status: 401 });
     }
 
     await connectDB();
     
-    // Get user from session (lean returns plain object)
-    const userObj: any = await User.findById(sessionId).select("-password").lean();
+    const userObj: any = await User.findById(sessionCookie.value).select("-password").lean();
 
     if (!userObj) {
       const resp = NextResponse.json({ success: false, error: "Invalid session" }, { status: 401 });
@@ -32,24 +23,23 @@ export async function GET() {
       return resp;
     }
 
-    return NextResponse.json({
-      success: true,
-      user: {
-        _id: String(userObj._id),
-        username: userObj.username,
-        name: userObj.name,
-        email: userObj.email
-      }
-    });
+    const safeUser: SafeUser = {
+      _id: String(userObj._id),
+      username: userObj.username,
+      name: userObj.name,
+      email: userObj.email
+    };
+
+    return NextResponse.json({ success: true, user: safeUser });
   } catch (err) {
-    console.error("GET /controller/user error:", err);
+    console.error("GET /api/user/check error:", err);
     return NextResponse.json({ success: false, error: "Authentication check failed" }, { status: 500 });
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(req: Request) {
   try {
-    const body = await request.json() as any;
+    const body = await req.json() as any;
     const username = typeof body?.username === 'string' ? body.username : undefined;
     const password = typeof body?.password === 'string' ? body.password : undefined;
 
@@ -65,15 +55,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: "Invalid credentials" }, { status: 401 });
     }
 
-    const response = NextResponse.json({
-      success: true,
-      user: {
-        _id: String(userObj._id),
-        username: userObj.username,
-        name: userObj.name,
-        email: userObj.email
-      }
-    });
+    const response = NextResponse.json({ success: true, user: {
+      _id: String(userObj._id),
+      username: userObj.username,
+      name: userObj.name,
+      email: userObj.email
+    }});
 
     response.cookies.set("session", String(userObj._id), {
       httpOnly: true,
@@ -84,7 +71,7 @@ export async function POST(request: Request) {
 
     return response;
   } catch (err) {
-    console.error("POST /controller/user error:", err);
+    console.error("POST /api/user/login error:", err);
     return NextResponse.json({ success: false, error: "Login failed" }, { status: 500 });
   }
 }
@@ -95,7 +82,7 @@ export async function DELETE() {
     resp.cookies.delete("session");
     return resp;
   } catch (err) {
-    console.error("DELETE /controller/user error:", err);
+    console.error("DELETE /api/user/logout error:", err);
     return NextResponse.json({ success: false, error: "Logout failed" }, { status: 500 });
   }
 }

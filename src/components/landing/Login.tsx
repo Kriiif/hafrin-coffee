@@ -1,6 +1,9 @@
 "use client"
 
 import React, { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useUser } from '@/app/controller/context/usercontext'
+import { toast } from 'sonner'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,11 +15,22 @@ export function LoginPage() {
   const [password, setPassword] = useState('')
   const [message, setMessage] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const { login } = useUser()
+  const router = useRouter()
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
-    setMessage('') 
-    console.log({ username, password })
+    setMessage('')
+    try {
+      await login(username, password)
+      toast.success('Login berhasil')
+      router.push('/')
+    } catch (err) {
+      console.error('Login error', err)
+      const msg = err instanceof Error ? err.message : 'Login failed'
+      setMessage(msg)
+      toast.error(msg)
+    }
   }
 
   const togglePasswordVisibility = () => {

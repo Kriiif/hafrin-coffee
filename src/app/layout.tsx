@@ -4,6 +4,7 @@ import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 import { Toaster } from 'react-hot-toast';
 import { CartProvider } from '@/app/controller/context/cartcontext';
+import { UserProvider } from '@/app/controller/context/usercontext';
 
 export const metadata: Metadata = {
   title: 'Hafrin Coffee',
@@ -28,11 +29,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <CartProvider>
-          {children}
-          <Analytics />
-          <Toaster position="bottom-center" />
-        </CartProvider>
+        <UserProvider>
+          <CartProvider>
+            {children}
+            <Analytics />
+            <Toaster position="bottom-center" />
+          </CartProvider>
+        </UserProvider>
       </body>
     </html>
   )

@@ -1,47 +1,15 @@
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
-import { cookies } from "next/headers";
 import { connectDB } from "@/lib/mongodb";
 import { Cart } from "@/models/cart";
 import { Menu } from "@/models/menu";
-import { User } from "@/models/user";
 
 function isValidObjectId(id?: string | null) {
 	return typeof id === "string" && mongoose.Types.ObjectId.isValid(id);
 }
 
-type UserData = {
-	_id: string;
-	username: string;
-	name: string;
-	email: string;
-}
-
-async function checkAuth(req: Request) {
-	// Read session cookie directly (server-side)
-	const cookieStore = await cookies();
-	const sessionId = cookieStore.get("session")?.value;
-	if (!sessionId || !mongoose.Types.ObjectId.isValid(sessionId)) return null;
-
-	await connectDB();
-	const userObj: any = await User.findById(sessionId).select("-password").lean();
-	if (!userObj) return null;
-
-	return {
-		_id: String(userObj._id),
-		username: userObj.username,
-		name: userObj.name,
-		email: userObj.email,
-	};
-}
-
 export async function GET(req: Request) {
 	try {
-		const user = await checkAuth(req);
-		if (!user) {
-			return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-		}
-
 		const url = new URL(req.url);
 		const idUser = url.searchParams.get("idUser");
 
@@ -100,29 +68,13 @@ export async function POST(req: Request) {
 			return NextResponse.json({ success: false, error: "Menu item not found" }, { status: 404 });
 		}
 
-		const existing = cart.items.find((it: any) => {
-			// Compare basic properties
-			const basicMatch = String(it.idProduct) === String(idProduct) &&
-				it.sugar === customizations.sugar &&
-				it.ice === customizations.ice;
-
-			// If basic properties don't match, return false
-			if (!basicMatch) return false;
-
-			// Handle additions comparison
-			const itemAdditions = it.additions || [];
-			const newAdditions = customizations.additions || [];
-
-			// If lengths differ, they're not the same
-			if (itemAdditions.length !== newAdditions.length) return false;
-
-			// Sort both arrays to ensure consistent comparison
-			const sortedItemAdditions = [...itemAdditions].sort();
-			const sortedNewAdditions = [...newAdditions].sort();
-
-			// Compare each addition
-			return sortedItemAdditions.every((addition, index) => addition === sortedNewAdditions[index]);
-		});
+		const existing = cart.items.find((it: any) => 
+			String(it.idProduct) === String(idProduct) &&
+			it.sugar === customizations.sugar &&
+			it.ice === customizations.ice &&
+			(!customizations.additions || customizations.additions.length === 0) &&
+			(!it.additions || it.additions.length === 0)
+		);
 
 		if (existing) {
 			existing.quantity = (existing.quantity || 0) + quantity;
@@ -165,28 +117,8 @@ export async function PUT(req: Request) {
 		let cart = await Cart.findOne({ idUser });
 		if (!cart) return NextResponse.json({ success: false, error: "Cart not found" }, { status: 404 });
 
-		const { sugar, ice, additions } = body.customizations || {};
-		
-		// Find the specific item with matching customizations
-		const idx = cart.items.findIndex((it: any) => {
-			const basicMatch = String(it.idProduct) === String(idProduct) &&
-				it.sugar === sugar &&
-				it.ice === ice;
-
-			if (!basicMatch) return false;
-
-			const itemAdditions = it.additions || [];
-			const updateAdditions = additions || [];
-
-			if (itemAdditions.length !== updateAdditions.length) return false;
-
-			const sortedItemAdditions = [...itemAdditions].sort();
-			const sortedUpdateAdditions = [...updateAdditions].sort();
-
-			return sortedItemAdditions.every((addition, index) => addition === sortedUpdateAdditions[index]);
-		});
-
-		if (idx === -1) return NextResponse.json({ success: false, error: "Item not found in cart" }, { status: 404 });
+		const idx = cart.items.findIndex((it: any) => String(it.idProduct) === String(idProduct));
+		if (idx === -1) return NextResponse.json({ success: false, error: "Product not in cart" }, { status: 404 });
 
 		if (quantity <= 0) {
 			cart.items.splice(idx, 1);
@@ -232,33 +164,7 @@ export async function DELETE(req: Request) {
 		let cart = await Cart.findOne({ idUser });
 		if (!cart) return NextResponse.json({ success: false, error: "Cart not found" }, { status: 404 });
 
-		const customizations = body.customizations || {};
-		const { sugar, ice, additions } = customizations;
-
-		if (Object.keys(customizations).length > 0) {
-			// Remove specific item with matching customizations
-			cart.items = cart.items.filter((it: any) => {
-				const basicMatch = String(it.idProduct) !== String(idProduct) ||
-					it.sugar !== sugar ||
-					it.ice !== ice;
-
-				if (basicMatch) return true;
-
-				const itemAdditions = it.additions || [];
-				const deleteAdditions = additions || [];
-
-				if (itemAdditions.length !== deleteAdditions.length) return true;
-
-				const sortedItemAdditions = [...itemAdditions].sort();
-				const sortedDeleteAdditions = [...deleteAdditions].sort();
-
-				return !sortedItemAdditions.every((addition, index) => addition === sortedDeleteAdditions[index]);
-			});
-		} else {
-			// Legacy behavior: remove all items with matching product ID
-			cart.items = cart.items.filter((it: any) => String(it.idProduct) !== String(idProduct));
-		}
-		
+		cart.items = cart.items.filter((it: any) => String(it.idProduct) !== String(idProduct));
 		await cart.save();
 
 		cart = await Cart.findOne({ _id: cart._id }).populate({

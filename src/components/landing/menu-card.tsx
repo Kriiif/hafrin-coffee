@@ -1,6 +1,8 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from 'next/navigation'
+import { useUser } from '@/app/controller/context/usercontext'
 // 1. Import toast
 import { toast } from "react-hot-toast"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -41,8 +43,16 @@ export function MenuCard({ item }: { item: MenuItem }) {
   }
   
   const { addToCart } = useCart()
+  const { user } = useUser()
+  const router = useRouter()
 
   const handleConfirm = () => {
+    if (!user) {
+      setIsOpen(false)
+      toast.error("Please login to add items to cart")
+      router.push("/login")
+      return
+    }
     addToCart({
       quantity,
       sugar,
