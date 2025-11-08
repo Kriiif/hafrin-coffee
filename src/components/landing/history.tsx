@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { Navbar } from './navbar' 
 import { Button } from '@/components/ui/button' 
 import { useUser } from '@/app/controller/context/usercontext'
-// NEW: Import Dialog components
 import {
   Dialog,
   DialogContent,
@@ -48,7 +47,6 @@ type HistoryItemRowProps = {
   item: HistoryItem;
 }
 
-// NEW: Helper component for clean modal rows
 const DetailRow = ({ label, value }: { label: string; value: string | number }) => (
   <div className="flex justify-between items-center">
     <span className="text-sm text-muted-foreground">{label}</span>
@@ -65,7 +63,6 @@ function HistoryItemRow({ item }: HistoryItemRowProps) {
   ];
 
   return (
-    // Used beige card color from History.png
     <div className="text-card-foreground rounded-lg p-4 flex"> 
       
       <div className="flex items-center space-x-4">
@@ -85,14 +82,10 @@ function HistoryItemRow({ item }: HistoryItemRowProps) {
       </div>
 
       <div className="flex-1" />
-
-      {/* Modified right side to match History.png */}
       <div className="flex items-center gap-4 md:gap-6">
         <span className="text-md md:text-lg font-bold text-foreground flex-shrink-0 w-28 text-right">
           {formatCurrency(totalItemPrice)}
         </span>
-        
-        {/* NEW: Replaced Button with a Dialog containing the Button */}
         <Dialog>
           <DialogTrigger asChild>
             <Button 
@@ -182,7 +175,6 @@ export function History() {
           return;
         }
 
-        // Map API orders to PastOrder shape expected by UI
         const mapped: PastOrder[] = (data.orders || []).map((o: any) => ({
           id: o._id,
           date: new Date(o.createdAt).toLocaleDateString(),
