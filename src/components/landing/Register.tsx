@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { User, Lock, Eye, EyeOff, Mail, Phone, MapPin, UserCircle } from 'lucide-react'
 import { toast } from 'sonner'
+import { FcGoogle } from 'react-icons/fc' 
 
 type FormData = {
   username: string
@@ -44,7 +45,6 @@ export function RegisterPage() {
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
     setLoading(true)
-
     try {
       const res = await fetch('/api/user/register', {
         method: 'POST',
@@ -54,12 +54,7 @@ export function RegisterPage() {
 
       const data = await res.json() as {
         success: boolean;
-        user?: {
-          _id: string;
-          username: string;
-          name: string;
-          email: string;
-        };
+        user?: { _id: string; username: string; name: string; email: string; };
         error?: string;
       }
 
@@ -84,7 +79,7 @@ export function RegisterPage() {
   return (
     <div className="min-h-screen bg-muted/40">
       <main className="flex items-center justify-center py-16 md:py-24 px-4">
-        <div className="w-full max-w-md bg-card text-card-foreground rounded-lg p-6 md:p-8 border shadow-lg space-y-8">
+        <div className="w-full max-w-md bg-card text-card-foreground rounded-lg p-6 md:p-8 border shadow-lg space-y-6"> 
           
           <div className="flex justify-center">
               <img 
@@ -108,15 +103,7 @@ export function RegisterPage() {
               <Label htmlFor="username">Username</Label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input
-                  id="username"
-                  type="text"
-                  required
-                  value={formData.username}
-                  onChange={e => handleChange('username')(e)}
-                  className="pl-10"
-                  placeholder="Enter your username"
-                />
+                <Input id="username" type="text" required value={formData.username} onChange={e => handleChange('username')(e)} className="pl-10" placeholder="Enter your username" />
               </div>
             </div>
 
@@ -124,15 +111,7 @@ export function RegisterPage() {
               <Label htmlFor="name">Full Name</Label>
               <div className="relative">
                 <UserCircle className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input
-                  id="name"
-                  type="text"
-                  required
-                  value={formData.name}
-                  onChange={e => handleChange('name')(e)}
-                  className="pl-10"
-                  placeholder="Enter your full name"
-                />
+                <Input id="name" type="text" required value={formData.name} onChange={e => handleChange('name')(e)} className="pl-10" placeholder="Enter your full name" />
               </div>
             </div>
 
@@ -140,15 +119,7 @@ export function RegisterPage() {
               <Label htmlFor="email">Email</Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input
-                  id="email"
-                  type="email"
-                  required
-                  value={formData.email}
-                  onChange={e => handleChange('email')(e)}
-                  className="pl-10"
-                  placeholder="Enter your email"
-                />
+                <Input id="email" type="email" required value={formData.email} onChange={e => handleChange('email')(e)} className="pl-10" placeholder="Enter your email" />
               </div>
             </div>
 
@@ -156,21 +127,8 @@ export function RegisterPage() {
               <Label htmlFor="password">Password</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  required
-                  value={formData.password}
-                  onChange={e => handleChange('password')(e)}
-                  className="pl-10 pr-10"
-                  placeholder="Create a password"
-                />
-                <button
-                  type="button"
-                  onClick={togglePasswordVisibility}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground hover:text-foreground"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                >
+                <Input id="password" type={showPassword ? "text" : "password"} required value={formData.password} onChange={e => handleChange('password')(e)} className="pl-10 pr-10" placeholder="Create a password" />
+                <button type="button" onClick={togglePasswordVisibility} className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground hover:text-foreground" aria-label={showPassword ? "Hide password" : "Show password"}>
                   {showPassword ? <EyeOff /> : <Eye />}
                 </button>
               </div>
@@ -194,14 +152,7 @@ export function RegisterPage() {
               <Label htmlFor="phone">Phone Number</Label>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input
-                  id="phone"
-                  type="tel"
-                  value={formData.phone}
-                  onChange={e => handleChange('phone')(e)}
-                  className="pl-10"
-                  placeholder="Enter your phone number"
-                />
+                <Input id="phone" type="tel" value={formData.phone} onChange={e => handleChange('phone')(e)} className="pl-10" placeholder="Enter your phone number" />
               </div>
             </div>
 
@@ -209,17 +160,10 @@ export function RegisterPage() {
               <Label htmlFor="address">Address</Label>
               <div className="relative">
                 <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input
-                  id="address"
-                  type="text"
-                  value={formData.address}
-                  onChange={e => handleChange('address')(e)}
-                  className="pl-10"
-                  placeholder="Enter your address"
-                />
+                <Input id="address" type="text" value={formData.address} onChange={e => handleChange('address')(e)} className="pl-10" placeholder="Enter your address" />
               </div>
             </div>
-
+            
             <Button
               type="submit"
               className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90"
@@ -228,6 +172,25 @@ export function RegisterPage() {
               {loading ? 'Creating Account...' : 'Create Account'}
             </Button>
           </form>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-card px-2 text-muted-foreground">
+                Or continue with
+              </span>
+            </div>
+          </div>
+
+          <Button
+            variant="outline"
+            className="w-full bg-white text-gray-700" 
+          >
+            <FcGoogle className="mr-2 h-5 w-5" /> 
+            Login with Google
+          </Button>
 
           <p className="text-center text-sm text-muted-foreground">
             Already have an account?{' '}

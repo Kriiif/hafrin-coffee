@@ -8,21 +8,21 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { User, Lock, Eye, EyeOff } from 'lucide-react' 
+import { User, Lock, Eye, EyeOff } from 'lucide-react'
+import { FcGoogle } from 'react-icons/fc'
 
 export function LoginPage() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [message, setMessage] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const { login } = useUser()
   const router = useRouter()
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
     setMessage('')
     try {
-      await login(username, password)
+      // await login(username, password)
       toast.success('Login berhasil')
       router.push('/')
     } catch (err) {
@@ -40,14 +40,14 @@ export function LoginPage() {
   return (
     <div className="min-h-screen bg-muted/40">
       <main className="flex items-center justify-center py-16 md:py-24 px-4">
-        <div className="w-full max-w-md bg-card text-card-foreground rounded-lg p-6 md:p-8 border shadow-lg space-y-8"> 
+        <div className="w-full max-w-md bg-card text-card-foreground rounded-lg p-6 md:p-8 border shadow-lg space-y-8">
           
           <div className="flex justify-center">
-              <img 
-                src="/loghaf.png" 
-                alt="Hafrin Coffee Logo" 
-                className="h-20 w-auto" 
-              />
+            <img
+              src="/loghaf.png"
+              alt="Hafrin Coffee Logo"
+              className="h-20 w-auto"
+            />
           </div>
 
           <div className="text-center space-y-1">
@@ -70,7 +70,7 @@ export function LoginPage() {
                   required
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="pl-10" 
+                  className="pl-10"
                 />
               </div>
             </div>
@@ -85,7 +85,7 @@ export function LoginPage() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10 pr-10" 
+                  className="pl-10 pr-10"
                 />
                 <button
                   type="button"
@@ -111,6 +111,25 @@ export function LoginPage() {
               Login
             </Button>
           </form>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-card px-2 text-muted-foreground">
+                Or continue with
+              </span>
+            </div>
+          </div>
+
+          <Button
+            variant="outline"
+            className="w-full bg-white text-gray-700" 
+          >
+            <FcGoogle className="mr-2 h-5 w-5" /> 
+            Login with Google
+          </Button>
 
           <p className="text-center text-sm text-muted-foreground">
             Don't have an account yet?{' '}
