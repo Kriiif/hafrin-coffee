@@ -123,13 +123,18 @@ export function LoginPage() {
             </div>
           </div>
 
-          <Button
-            variant="outline"
-            className="w-full bg-white text-gray-700" 
-          >
-            <FcGoogle className="mr-2 h-5 w-5" /> 
-            Login with Google
-          </Button>
+          <a href="/api/auth/google" className="w-full inline-block">
+            <Button
+              variant="outline"
+              className="w-full bg-white text-gray-700"
+              asChild={false}
+            >
+              <span>
+                <FcGoogle className="mr-2 h-5 w-5 inline-block" />
+                Login with Google
+              </span>
+            </Button>
+          </a>
 
           <p className="text-center text-sm text-muted-foreground">
             Don't have an account yet?{' '}

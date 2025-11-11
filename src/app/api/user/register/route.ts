@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { User } from "@/models/user";
 import mongoose from "mongoose";
+import crypto from "crypto";
 
 type RegisterRequest = {
   username: string;
@@ -45,12 +46,17 @@ export async function POST(req: Request) {
       );
     }
 
+    // Hash password before saving using scrypt
+    const salt = crypto.randomBytes(16).toString('hex');
+    const derived = crypto.scryptSync(password, salt, 64).toString('hex');
+    const storedPassword = `${salt}:${derived}`;
+
     // Create new user
     const user = await User.create({
       username,
       name,
       email,
-      password, // Note: In production, hash the password before saving
+      password: storedPassword,
       gender: gender || "other",
       phone,
       address,

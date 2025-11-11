@@ -38,12 +38,56 @@ export async function GET() {
         _id: String(userObj._id),
         username: userObj.username,
         name: userObj.name,
-        email: userObj.email
+        email: userObj.email,
+        picture: userObj.picture || null,
+        provider: userObj.provider || null,
+        providerId: userObj.providerId || null,
+        oauth: Boolean(userObj.oauth),
+        phone: userObj.phone || null,
+        address: userObj.address || null
       }
     });
   } catch (err) {
     console.error("GET /controller/user error:", err);
     return NextResponse.json({ success: false, error: "Authentication check failed" }, { status: 500 });
+  }
+}
+
+export async function PUT(request: Request) {
+  try {
+    const cookieStore = await cookies();
+    const sessionId = cookieStore.get("session")?.value;
+    if (!sessionId) return NextResponse.json({ success: false, error: "Not authenticated" }, { status: 401 });
+
+    const body = await request.json() as any;
+    const updates: any = {};
+    if (typeof body.name === 'string') updates.name = body.name;
+    if (typeof body.username === 'string') updates.username = body.username;
+    if (typeof body.phone === 'string') updates.phone = body.phone;
+    if (typeof body.address === 'string') updates.address = body.address;
+    if (typeof body.picture === 'string') updates.picture = body.picture;
+
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json({ success: false, error: "No valid fields to update" }, { status: 400 });
+    }
+
+    await connectDB();
+    const updated = await User.findByIdAndUpdate(sessionId, { $set: updates }, { new: true }).select('-password').lean();
+    if (!updated) return NextResponse.json({ success: false, error: "User not found" }, { status: 404 });
+
+    const u: any = updated as any;
+    return NextResponse.json({ success: true, user: {
+      _id: String(u._id),
+      username: u.username,
+      name: u.name,
+      email: u.email,
+      picture: u.picture || null,
+      phone: u.phone || null,
+      address: u.address || null
+    }});
+  } catch (err) {
+    console.error("PUT /controller/user error:", err);
+    return NextResponse.json({ success: false, error: "Update failed" }, { status: 500 });
   }
 }
 

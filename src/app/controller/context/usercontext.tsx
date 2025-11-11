@@ -8,6 +8,9 @@ type User = {
   username: string
   name: string
   email: string
+  picture?: string | null
+  phone?: string | null
+  address?: string | null
 }
 
 type UserContextType = {
@@ -15,6 +18,7 @@ type UserContextType = {
   loading: boolean
   login: (username: string, password: string) => Promise<void>
   logout: () => void
+  refreshUser: () => Promise<void>
   requireAuth: () => boolean
 }
 
@@ -33,10 +37,16 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const checkAuth = async () => {
     try {
       const res = await fetch("/controller/user")
-      const data = await res.json() as { success: boolean; user?: User; error?: string }
+      const data = await res.json() as { success: boolean; user?: any; error?: string }
       
       if (data.success && data.user) {
-        setUser(data.user)
+        setUser({
+          _id: data.user._id,
+          username: data.user.username,
+          name: data.user.name,
+          email: data.user.email,
+          picture: data.user.picture || null
+        })
       } else {
         setUser(null)
       }
@@ -48,6 +58,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const refreshUser = async () => {
+    setLoading(true);
+    await checkAuth();
+  }
+
   const login = async (username: string, password: string) => {
     try {
       const res = await fetch("/controller/user", {
@@ -56,7 +71,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ username, password }),
       })
 
-      const data = await res.json() as { success: boolean; user?: User; error?: string }
+  const data = await res.json() as { success: boolean; user?: any; error?: string }
 
       if (!data.success) {
         throw new Error(data.error || "Login failed")
@@ -66,7 +81,13 @@ export function UserProvider({ children }: { children: ReactNode }) {
         throw new Error("No user data received")
       }
 
-      setUser(data.user)
+      setUser({
+        _id: data.user._id,
+        username: data.user.username,
+        name: data.user.name,
+        email: data.user.email,
+        picture: data.user.picture || null
+      })
     } catch (err) {
       console.error("Login failed:", err)
       throw err
@@ -92,7 +113,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <UserContext.Provider value={{ user, loading, login, logout, requireAuth }}>
+    <UserContext.Provider value={{ user, loading, login, logout, refreshUser, requireAuth }}>
       {children}
     </UserContext.Provider>
   )

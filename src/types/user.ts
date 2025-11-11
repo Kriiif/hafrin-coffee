@@ -6,6 +6,10 @@ export interface UserDocument {
   name: string;
   email: string;
   password: string;
+  picture?: string;
+  provider?: string;
+  providerId?: string;
+  oauth?: boolean;
   gender: "male" | "female" | "other";
   phone?: string;
   address?: string;

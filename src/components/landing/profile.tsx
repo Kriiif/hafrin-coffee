@@ -1,12 +1,14 @@
 "use client"
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Navbar } from './navbar' 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar' 
+import { useUser } from '@/app/controller/context/usercontext'
+import { toast } from 'sonner'
 import { Separator } from '@/components/ui/separator' 
 import {
   Dialog,
@@ -20,12 +22,28 @@ import {
 } from "@/components/ui/dialog"
 
 export function ProfilePage() {
-  const [namaAsli, setNamaAsli] = useState('abraham')
-  const [username, setUsername] = useState('basmalah')
-  const [gender, setGender] = useState('Male')
-  const [nomorHp, setNomorHp] = useState('081317718146')
-  const [alamat, setAlamat] = useState('Johar')
-  const [currentEmail, setCurrentEmail] = useState('basmalah@gmail.com')
+  const { user, loading, requireAuth, refreshUser } = useUser();
+  // Redirect to login if not authenticated
+  if (!loading && !requireAuth()) return <div />;
+
+  const [namaAsli, setNamaAsli] = useState('')
+  const [username, setUsername] = useState('')
+  const [gender, setGender] = useState('')
+  const [nomorHp, setNomorHp] = useState('')
+  const [alamat, setAlamat] = useState('')
+  const [currentEmail, setCurrentEmail] = useState('')
+  const [avatarUrl, setAvatarUrl] = useState('')
+
+  useEffect(() => {
+    if (user) {
+      setNamaAsli(user.name || '')
+      setUsername(user.username || '')
+      setNomorHp((user as any).phone || '')
+      setAlamat((user as any).address || '')
+      setCurrentEmail(user.email || '')
+      setAvatarUrl(user.picture || '')
+    }
+  }, [user])
   
   // NEW: State for the main form's message
   const [mainMessage, setMainMessage] = useState('')
@@ -44,17 +62,34 @@ export function ProfilePage() {
   const handleSaveChanges = (event: React.FormEvent) => {
     event.preventDefault()
     setMainMessage('')
+    ;(async () => {
+      try {
+        const res = await fetch('/controller/user', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: namaAsli,
+            username,
+            phone: nomorHp,
+            address: alamat,
+            picture: avatarUrl
+          })
+        })
 
-    console.log({
-      namaAsli,
-      username,
-      gender,
-      nomorHp,
-      alamat,
-    })
-    
-    setMainMessageType('success')
-    setMainMessage('Profile details updated successfully!')
+  const data = await res.json() as any
+  if (!res.ok || !data.success) throw new Error(data.error || 'Update failed')
+
+        await refreshUser()
+        setMainMessageType('success')
+        setMainMessage('Profile details updated successfully!')
+        toast.success('Profile updated')
+      } catch (err: any) {
+        console.error('Failed to save profile:', err)
+        setMainMessageType('error')
+        setMainMessage(err?.message || 'Failed to update profile')
+        toast.error(err?.message || 'Failed to update profile')
+      }
+    })()
   }
 
   // NEW: This handler manages the email change logic inside the modal
