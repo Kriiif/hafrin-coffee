@@ -12,6 +12,7 @@ import {
   LogIn,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useUser } from '@/app/controller/context/usercontext'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,16 +34,16 @@ export function Navbar({
   const router = useRouter()
 
   // 3. Create a handler function for logging out
-  const handleLogout = () => {
-    // ---
-    // TODO: Add your actual logout logic here
-    // (e.g., clearing localStorage, removing cookies, etc.)
-    // Example: localStorage.removeItem('user-token')
-    // ---
-    console.log("Logging out...")
+  const { logout } = useUser()
 
-    // After logic, redirect to the Login page
-    router.push("/login") // <-- CHANGED: Use lowercase "/login"
+  const handleLogout = async () => {
+    try {
+      await logout()
+    } catch (err) {
+      console.error('Logout failed from navbar:', err)
+      // Still navigate to login as a fallback
+      router.push('/login')
+    }
   }
 
   return (

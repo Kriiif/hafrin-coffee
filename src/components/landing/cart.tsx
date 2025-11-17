@@ -161,22 +161,87 @@ export function Cart() {
         throw new Error(error.message || "Checkout failed");
       }
 
-      // Remove checked out items from cart by calling removeItem with the
-      // original product id + options (sugar/ice/additions). We use the
-      // itemsToCheckout array so we have the full item objects to remove.
-      await Promise.all(itemsToCheckout.map(item =>
-        removeItem(
-          item.idProduct._id,
-          {
-            sugar: item.sugar,
-            ice: item.ice,
-            additions: [...item.additions].sort()
-          }
-        )
-      ));
+      const orderResult = await res.json().catch(() => ({ success: false })) as any;
 
+      if (!orderResult || !orderResult.success || !orderResult.order) {
+        throw new Error((orderResult && orderResult.error) || 'Failed to create order');
+      }
+
+      // Call Midtrans to create a Snap transaction and redirect the user
+      try {
+        const customerName = (user && (((user as any).name) || ((user as any).fullname) || ((user as any).username))) || 'Customer';
+        const midtransRes = await fetch('/api/midtrans/auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId: orderResult.order._id,
+            gross_amount: subtotal,
+            items: itemsToCheckout.map(it => ({
+              id: String(it.idProduct._id || it.idProduct),
+              price: it.idProduct.price,
+              quantity: it.quantity,
+              name: it.idProduct.name
+            })),
+            customer: {
+              name: customerName,
+              email: (user && ((user as any).email)) || undefined,
+              phone: (user && ((user as any).phone)) || undefined
+            }
+          })
+        });
+
+        // Read raw response text so we can show helpful error details when JSON parsing fails
+        const midtext = await midtransRes.text();
+        let midjson: any = {};
+        try {
+          midjson = midtext ? JSON.parse(midtext) : {};
+        } catch (e) {
+          // keep midjson as {} and log parse error
+          console.warn('Failed to parse Midtrans response as JSON', e, midtext);
+        }
+
+        if (!midtransRes.ok || !midjson || !midjson.success) {
+          console.error('Midtrans init failed', { status: midtransRes.status, statusText: midtransRes.statusText, body: midjson || midtext });
+          // Show a more descriptive error if available from server
+          const serverMsg = (midjson && (midjson.error || midjson.message)) || midtext || 'Failed to initialize payment gateway.';
+          toast.error(`Payment init failed: ${String(serverMsg).slice(0,200)}`);
+          setSelectedItems([]);
+          return;
+        }
+
+        // midjson.data contains the raw Midtrans response (token/redirect_url)
+        const midData = midjson.data || {};
+        // Prefer redirect_url if provided (Snap may return redirect_url in some flows)
+        if (midData.redirect_url) {
+          window.location.href = midData.redirect_url;
+          return;
+        }
+
+        // Fallback: if token exists we can try to open Snap using the token via redirect
+        if (midData.token) {
+          // Some Midtrans integrations require client-side Snap JS; falling back to redirect to checkout page
+          // The server may provide a redirect_url as part of the raw response, attempt again
+          if (midData.redirect_url) {
+            window.location.href = midData.redirect_url;
+            return;
+          }
+
+          // As a last resort, notify the user and keep them on the site
+          toast.success('Payment initialized. Please complete payment from the next page.');
+          setSelectedItems([]);
+          return;
+        }
+      } catch (merr) {
+        console.error('Midtrans call error', merr);
+        toast.error('Payment gateway not available. Your order was created.');
+        setSelectedItems([]);
+        return;
+      }
+
+      // Do NOT remove items from the cart here. Cart cleanup will be
+      // performed server-side when payment is confirmed by Midtrans (callback).
       setSelectedItems([]);
-      toast.success("Checkout berhasil!");
+      toast.success("Order created. Please complete payment in the payment gateway.");
     } catch (err) {
       console.error("Checkout error:", err);
       toast.error(err instanceof Error ? err.message : "Checkout gagal!");

@@ -52,55 +52,15 @@ export async function POST(req: Request) {
       idUser,
       items: normalizedItems,
       totalAmount,
-      // statusHistory will be handled by schema defaults, but we can add an initial entry
-      statusHistory: [{ status: "created" }]
+      // start with paymentStatus pending (schema default) and record initial status
+      statusHistory: [{ status: "pending", timestamp: new Date() }]
     };
 
     const newOrder = await Order.create(orderDoc);
     console.log("✅ Order saved:", newOrder);
 
-    // After creating the order, remove the ordered items from the user's cart
-    try {
-      // Find cart for the user
-      const cartDoc: any = await Cart.findOne({ idUser });
-      if (cartDoc) {
-        // For each ordered item, remove matching entries from cart
-        for (const ordItem of normalizedItems) {
-          const idProductToRemove = String(ordItem.idProduct);
-          const { sugar, ice, additions } = ordItem;
-
-          if (additions && additions.length > 0) {
-            cartDoc.items = cartDoc.items.filter((it: any) => {
-              const basicMatch = String(it.idProduct) === idProductToRemove &&
-                it.sugar === sugar &&
-                it.ice === ice;
-
-              if (!basicMatch) return true; // keep
-
-              const itemAdditions = it.additions || [];
-              const deleteAdditions = additions || [];
-
-              if (itemAdditions.length !== deleteAdditions.length) return true;
-
-              const sortedItemAdditions = [...itemAdditions].sort();
-              const sortedDeleteAdditions = [...deleteAdditions].sort();
-
-              // If they match exactly, filter this item out (i.e. return false)
-              return !sortedItemAdditions.every((addition, index) => addition === sortedDeleteAdditions[index]);
-            });
-          } else {
-            // Remove all items with matching product id
-            cartDoc.items = cartDoc.items.filter((it: any) => String(it.idProduct) !== idProductToRemove);
-          }
-        }
-
-        await cartDoc.save();
-        console.log("🧹 Removed ordered items from cart for user", idUser);
-      }
-    } catch (err) {
-      console.error("Failed to remove items from cart after order creation:", err);
-      // Don't fail the order creation if cart cleanup fails; just log.
-    }
+    // NOTE: Do NOT remove items from cart at order creation time.
+    // Cart cleanup will occur only after payment confirmation from Midtrans callback.
 
     return NextResponse.json({ success: true, order: newOrder });
   } catch (err) {
