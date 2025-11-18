@@ -72,40 +72,26 @@ export async function dataApiFindOne<T = any>(collection: string, opts: FindOneO
     projection: opts.projection,
   }
 
-  const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), 5000) // 5s timeout - faster fail
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "api-key": apiKey,
+      "Accept": "application/json",
+      "Connection": "keep-alive",
+    },
+    body: JSON.stringify(body),
+    // @ts-ignore - some runtimes support this
+    keepalive: true,
+  })
 
-  try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "api-key": apiKey,
-        "Accept": "application/json",
-        "Connection": "keep-alive", // Reuse connections
-      },
-      body: JSON.stringify(body),
-      signal: controller.signal,
-      // @ts-ignore - some runtimes support this
-      keepalive: true,
-    })
-
-    clearTimeout(timeoutId)
-
-    if (!res.ok) {
-      const text = await res.text()
-      throw new Error(`Data API findOne failed: ${res.status} ${res.statusText} - ${text.slice(0, 300)}`)
-    }
-
-    const json = await res.json() as { document?: T }
-    return json.document
-  } catch (err) {
-    clearTimeout(timeoutId)
-    if (err instanceof Error && err.name === 'AbortError') {
-      throw new Error('Data API findOne timed out after 5s')
-    }
-    throw err
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(`Data API findOne failed: ${res.status} ${res.statusText} - ${text.slice(0, 300)}`)
   }
+
+  const json = await res.json() as { document?: T }
+  return json.document
 }
 
 export type UpdateOneOptions = {
@@ -127,40 +113,26 @@ export async function dataApiUpdateOne(collection: string, opts: UpdateOneOption
     update: opts.update,
   }
 
-  const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), 5000)
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "api-key": apiKey,
+      "Accept": "application/json",
+      "Connection": "keep-alive",
+    },
+    body: JSON.stringify(body),
+    // @ts-ignore
+    keepalive: true,
+  })
 
-  try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "api-key": apiKey,
-        "Accept": "application/json",
-        "Connection": "keep-alive",
-      },
-      body: JSON.stringify(body),
-      signal: controller.signal,
-      // @ts-ignore
-      keepalive: true,
-    })
-
-    clearTimeout(timeoutId)
-
-    if (!res.ok) {
-      const text = await res.text()
-      throw new Error(`Data API updateOne failed: ${res.status} ${res.statusText} - ${text.slice(0, 300)}`)
-    }
-
-    const json = await res.json() as { matchedCount?: number; modifiedCount?: number }
-    return json
-  } catch (err) {
-    clearTimeout(timeoutId)
-    if (err instanceof Error && err.name === 'AbortError') {
-      throw new Error('Data API updateOne timed out after 5s')
-    }
-    throw err
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(`Data API updateOne failed: ${res.status} ${res.statusText} - ${text.slice(0, 300)}`)
   }
+
+  const json = await res.json() as { matchedCount?: number; modifiedCount?: number }
+  return json
 }
 
 export type InsertOneOptions = {
@@ -180,40 +152,26 @@ export async function dataApiInsertOne(collection: string, opts: InsertOneOption
     document: opts.document,
   }
 
-  const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), 5000)
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "api-key": apiKey,
+      "Accept": "application/json",
+      "Connection": "keep-alive",
+    },
+    body: JSON.stringify(body),
+    // @ts-ignore
+    keepalive: true,
+  })
 
-  try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "api-key": apiKey,
-        "Accept": "application/json",
-        "Connection": "keep-alive",
-      },
-      body: JSON.stringify(body),
-      signal: controller.signal,
-      // @ts-ignore
-      keepalive: true,
-    })
-
-    clearTimeout(timeoutId)
-
-    if (!res.ok) {
-      const text = await res.text()
-      throw new Error(`Data API insertOne failed: ${res.status} ${res.statusText} - ${text.slice(0, 300)}`)
-    }
-
-    const json = await res.json() as { insertedId?: string }
-    return json
-  } catch (err) {
-    clearTimeout(timeoutId)
-    if (err instanceof Error && err.name === 'AbortError') {
-      throw new Error('Data API insertOne timed out after 5s')
-    }
-    throw err
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(`Data API insertOne failed: ${res.status} ${res.statusText} - ${text.slice(0, 300)}`)
   }
+
+  const json = await res.json() as { insertedId?: string }
+  return json
 }
 
 export type DeleteOneOptions = {
@@ -233,40 +191,26 @@ export async function dataApiDeleteOne(collection: string, opts: DeleteOneOption
     filter: opts.filter,
   }
 
-  const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), 5000)
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "api-key": apiKey,
+      "Accept": "application/json",
+      "Connection": "keep-alive",
+    },
+    body: JSON.stringify(body),
+    // @ts-ignore
+    keepalive: true,
+  })
 
-  try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "api-key": apiKey,
-        "Accept": "application/json",
-        "Connection": "keep-alive",
-      },
-      body: JSON.stringify(body),
-      signal: controller.signal,
-      // @ts-ignore
-      keepalive: true,
-    })
-
-    clearTimeout(timeoutId)
-
-    if (!res.ok) {
-      const text = await res.text()
-      throw new Error(`Data API deleteOne failed: ${res.status} ${res.statusText} - ${text.slice(0, 300)}`)
-    }
-
-    const json = await res.json() as { deletedCount?: number }
-    return json
-  } catch (err) {
-    clearTimeout(timeoutId)
-    if (err instanceof Error && err.name === 'AbortError') {
-      throw new Error('Data API deleteOne timed out after 5s')
-    }
-    throw err
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(`Data API deleteOne failed: ${res.status} ${res.statusText} - ${text.slice(0, 300)}`)
   }
+
+  const json = await res.json() as { deletedCount?: number }
+  return json
 }
 
 // Helper for Extended JSON ObjectId

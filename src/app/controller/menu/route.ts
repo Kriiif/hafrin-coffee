@@ -1,12 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
-import { Menu, type IMenu } from "@/models/menu";
-import { dataApiFind } from "@/lib/mongo-data-api";
-import mongoose from "mongoose";
-
-interface LeanMenuDocument extends Omit<IMenu, '_id'> {
-  _id: mongoose.Types.ObjectId | string;
-}
+import { dataApiFind, fromObjectId } from "@/lib/mongo-data-api";
 
 export async function GET(req: NextRequest) {
   try {
@@ -19,33 +12,43 @@ export async function GET(req: NextRequest) {
 
     if (hasDataApi) {
       console.log("GET /controller/menu - Using MongoDB Data API");
-      const docs = await dataApiFind<LeanMenuDocument>("menus", { filter: {}, limit: 100, projection: { name: 1, price: 1, description: 1, pic: 1 } });
-      const transformedMenus = docs.map(menu => ({
-        id: menu._id.toString(),
+      const docs = await dataApiFind<any>("menus", { 
+        filter: {}, 
+        limit: 100, 
+        projection: { name: 1, price: 1, description: 1, pic: 1 } 
+      });
+      
+      const transformedMenus = docs.map((menu: any) => ({
+        id: fromObjectId(menu._id),
         title: menu.name,
         description: menu.description || "",
         price: menu.price,
         imageQuery: menu.pic || menu.name.toLowerCase().replace(/\s+/g, "-"),
       }));
-      return NextResponse.json({ success: true, menus: transformedMenus });
+      
+      const response = NextResponse.json({ success: true, menus: transformedMenus });
+      response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60');
+      return response;
     }
 
-    // Fallback to direct mongoose (local dev / Node runtime)
-    console.log("GET /controller/menu - Connecting to MongoDB via Mongoose...");
-  await connectDB();
-  const menus = await Menu.find({}, { name: 1, price: 1, description: 1, pic: 1 }).lean() as unknown as LeanMenuDocument[];
-    const transformedMenus = menus.map(menu => ({
-      id: menu._id.toString(),
+    // Fallback to Mongoose (local dev)
+    console.log("GET /controller/menu - Using Mongoose");
+    const { connectDB } = await import("@/lib/mongodb");
+    const { Menu } = await import("@/models/menu");
+    await connectDB();
+    
+    const menus = await Menu.find({}, { name: 1, price: 1, description: 1, pic: 1 }).lean();
+    const transformedMenus = menus.map((menu: any) => ({
+      id: String(menu._id),
       title: menu.name,
       description: menu.description || "",
       price: menu.price,
       imageQuery: menu.pic || menu.name.toLowerCase().replace(/\s+/g, "-"),
     }));
-    // cache menus for 5 minutes at the edge
-    return NextResponse.json(
-      { success: true, menus: transformedMenus },
-      { headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=60' } }
-    );
+    
+    const response = NextResponse.json({ success: true, menus: transformedMenus });
+    response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60');
+    return response;
   } catch (error) {
     console.error("GET /controller/menu error:", error);
     

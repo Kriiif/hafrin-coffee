@@ -137,7 +137,7 @@ export function ProfilePage() {
           
           <div className="flex flex-col items-center space-y-4">
             <Avatar className="h-28 w-28 border-2">
-              <AvatarImage src="/Jurgenn.png"/>
+              <AvatarImage src="/placeholder-user.jpg"/>
             </Avatar>
           </div>
 
