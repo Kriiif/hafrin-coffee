@@ -17,8 +17,17 @@ export async function GET() {
     const cookieStore = await cookies();
     const sessionId = cookieStore.get("session")?.value;
     
+    console.log("GET /controller/user - Session ID:", sessionId ? "exists" : "missing");
+    
     if (!sessionId) {
       return NextResponse.json({ success: false, error: "Not authenticated" }, { status: 401 });
+    }
+
+    // Validate ObjectId format
+    if (!Types.ObjectId.isValid(sessionId)) {
+      const resp = NextResponse.json({ success: false, error: "Invalid session format" }, { status: 401 });
+      resp.cookies.delete("session");
+      return resp;
     }
 
     await connectDB();
@@ -27,10 +36,13 @@ export async function GET() {
     const userObj: any = await User.findById(sessionId).select("-password").lean();
 
     if (!userObj) {
+      console.log("GET /controller/user - User not found for session:", sessionId);
       const resp = NextResponse.json({ success: false, error: "Invalid session" }, { status: 401 });
       resp.cookies.delete("session");
       return resp;
     }
+
+    console.log("GET /controller/user - User found:", userObj.username);
 
     return NextResponse.json({
       success: true,
@@ -109,22 +121,31 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: "Invalid credentials" }, { status: 401 });
     }
 
+    console.log("POST /controller/user - Login successful for:", username);
+
     const response = NextResponse.json({
       success: true,
       user: {
         _id: String(userObj._id),
         username: userObj.username,
         name: userObj.name,
-        email: userObj.email
+        email: userObj.email,
+        picture: userObj.picture || null,
+        phone: userObj.phone || null,
+        address: userObj.address || null
       }
     });
 
+    // Set cookie with appropriate settings for production
     response.cookies.set("session", String(userObj._id), {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      path: "/"
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7 // 7 days
     });
+
+    console.log("POST /controller/user - Session cookie set for user:", userObj._id);
 
     return response;
   } catch (err) {

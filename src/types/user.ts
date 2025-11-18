@@ -25,6 +25,7 @@ export interface SafeUser {
 }
 
 export interface LoginCredentials {
+  _id: Types.ObjectId;
   username: string;
   password: string;
 }
