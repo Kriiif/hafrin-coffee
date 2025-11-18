@@ -40,8 +40,12 @@ export async function dataApiFind<T = any>(collection: string, opts: FindOptions
       "Content-Type": "application/json",
       "api-key": apiKey,
       "Accept": "application/json",
+      "Accept-Encoding": "gzip, deflate, br",
+      "Connection": "keep-alive",
     },
     body: JSON.stringify(body),
+    // @ts-ignore - some runtimes support this
+    keepalive: true,
   })
 
   if (!res.ok) {
@@ -78,6 +82,7 @@ export async function dataApiFindOne<T = any>(collection: string, opts: FindOneO
       "Content-Type": "application/json",
       "api-key": apiKey,
       "Accept": "application/json",
+      "Accept-Encoding": "gzip, deflate, br",
       "Connection": "keep-alive",
     },
     body: JSON.stringify(body),
@@ -119,6 +124,7 @@ export async function dataApiUpdateOne(collection: string, opts: UpdateOneOption
       "Content-Type": "application/json",
       "api-key": apiKey,
       "Accept": "application/json",
+      "Accept-Encoding": "gzip, deflate, br",
       "Connection": "keep-alive",
     },
     body: JSON.stringify(body),
@@ -158,6 +164,7 @@ export async function dataApiInsertOne(collection: string, opts: InsertOneOption
       "Content-Type": "application/json",
       "api-key": apiKey,
       "Accept": "application/json",
+      "Accept-Encoding": "gzip, deflate, br",
       "Connection": "keep-alive",
     },
     body: JSON.stringify(body),
@@ -197,6 +204,7 @@ export async function dataApiDeleteOne(collection: string, opts: DeleteOneOption
       "Content-Type": "application/json",
       "api-key": apiKey,
       "Accept": "application/json",
+      "Accept-Encoding": "gzip, deflate, br",
       "Connection": "keep-alive",
     },
     body: JSON.stringify(body),
