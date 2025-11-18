@@ -1,9 +1,9 @@
 import mongoose from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI!; 
+const MONGODB_URI = process.env.MONGODB_URI;
 
 if (!MONGODB_URI) {
-  throw new Error("❌ MONGODB_URI is not defined in .env.local");
+  console.warn("⚠️ MONGODB_URI is not defined. Database calls will be skipped.");
 }
 
 let isConnected = false; 
@@ -14,11 +14,16 @@ export async function connectDB() {
     return true;
   }
 
+  if (!MONGODB_URI) {
+    console.error("❌ connectDB called but MONGODB_URI is missing in environment");
+    return false;
+  }
+
   try {
     console.log("🔄 Connecting to MongoDB...");
     console.log("MONGODB_URI exists:", Boolean(MONGODB_URI));
     
-    const db = await mongoose.connect(MONGODB_URI, {
+  const db = await mongoose.connect(MONGODB_URI, {
       dbName: "hafrincoffee",
       serverSelectionTimeoutMS: 500, // 500ms timeout
       socketTimeoutMS: 45000,
