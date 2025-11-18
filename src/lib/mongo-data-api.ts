@@ -73,7 +73,7 @@ export async function dataApiFindOne<T = any>(collection: string, opts: FindOneO
   }
 
   const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), 8000) // 8s timeout
+  const timeoutId = setTimeout(() => controller.abort(), 5000) // 5s timeout - faster fail
 
   try {
     const res = await fetch(url, {
@@ -82,9 +82,12 @@ export async function dataApiFindOne<T = any>(collection: string, opts: FindOneO
         "Content-Type": "application/json",
         "api-key": apiKey,
         "Accept": "application/json",
+        "Connection": "keep-alive", // Reuse connections
       },
       body: JSON.stringify(body),
       signal: controller.signal,
+      // @ts-ignore - some runtimes support this
+      keepalive: true,
     })
 
     clearTimeout(timeoutId)
@@ -99,7 +102,7 @@ export async function dataApiFindOne<T = any>(collection: string, opts: FindOneO
   } catch (err) {
     clearTimeout(timeoutId)
     if (err instanceof Error && err.name === 'AbortError') {
-      throw new Error('Data API findOne timed out after 8s')
+      throw new Error('Data API findOne timed out after 5s')
     }
     throw err
   }
@@ -125,7 +128,7 @@ export async function dataApiUpdateOne(collection: string, opts: UpdateOneOption
   }
 
   const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), 8000)
+  const timeoutId = setTimeout(() => controller.abort(), 5000)
 
   try {
     const res = await fetch(url, {
@@ -134,9 +137,12 @@ export async function dataApiUpdateOne(collection: string, opts: UpdateOneOption
         "Content-Type": "application/json",
         "api-key": apiKey,
         "Accept": "application/json",
+        "Connection": "keep-alive",
       },
       body: JSON.stringify(body),
       signal: controller.signal,
+      // @ts-ignore
+      keepalive: true,
     })
 
     clearTimeout(timeoutId)
@@ -151,7 +157,7 @@ export async function dataApiUpdateOne(collection: string, opts: UpdateOneOption
   } catch (err) {
     clearTimeout(timeoutId)
     if (err instanceof Error && err.name === 'AbortError') {
-      throw new Error('Data API updateOne timed out after 8s')
+      throw new Error('Data API updateOne timed out after 5s')
     }
     throw err
   }
@@ -175,7 +181,7 @@ export async function dataApiInsertOne(collection: string, opts: InsertOneOption
   }
 
   const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), 8000)
+  const timeoutId = setTimeout(() => controller.abort(), 5000)
 
   try {
     const res = await fetch(url, {
@@ -184,9 +190,12 @@ export async function dataApiInsertOne(collection: string, opts: InsertOneOption
         "Content-Type": "application/json",
         "api-key": apiKey,
         "Accept": "application/json",
+        "Connection": "keep-alive",
       },
       body: JSON.stringify(body),
       signal: controller.signal,
+      // @ts-ignore
+      keepalive: true,
     })
 
     clearTimeout(timeoutId)
@@ -201,7 +210,60 @@ export async function dataApiInsertOne(collection: string, opts: InsertOneOption
   } catch (err) {
     clearTimeout(timeoutId)
     if (err instanceof Error && err.name === 'AbortError') {
-      throw new Error('Data API insertOne timed out after 8s')
+      throw new Error('Data API insertOne timed out after 5s')
+    }
+    throw err
+  }
+}
+
+export type DeleteOneOptions = {
+  filter: Record<string, unknown>
+}
+
+export async function dataApiDeleteOne(collection: string, opts: DeleteOneOptions) {
+  const url = requiredEnv("MONGODB_DATA_API_URL").replace(/\/$/, "") + "/action/deleteOne"
+  const apiKey = requiredEnv("MONGODB_DATA_API_KEY")
+  const dataSource = requiredEnv("MONGODB_DATA_SOURCE")
+  const database = process.env.MONGODB_DB || "hafrincoffee"
+
+  const body = {
+    dataSource,
+    database,
+    collection,
+    filter: opts.filter,
+  }
+
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 5000)
+
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "api-key": apiKey,
+        "Accept": "application/json",
+        "Connection": "keep-alive",
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+      // @ts-ignore
+      keepalive: true,
+    })
+
+    clearTimeout(timeoutId)
+
+    if (!res.ok) {
+      const text = await res.text()
+      throw new Error(`Data API deleteOne failed: ${res.status} ${res.statusText} - ${text.slice(0, 300)}`)
+    }
+
+    const json = await res.json() as { deletedCount?: number }
+    return json
+  } catch (err) {
+    clearTimeout(timeoutId)
+    if (err instanceof Error && err.name === 'AbortError') {
+      throw new Error('Data API deleteOne timed out after 5s')
     }
     throw err
   }
@@ -210,4 +272,11 @@ export async function dataApiInsertOne(collection: string, opts: InsertOneOption
 // Helper for Extended JSON ObjectId
 export function toObjectId(id: string) {
   return { $oid: id }
+}
+
+// Helper to extract ObjectId string from Extended JSON
+export function fromObjectId(oid: any): string {
+  if (typeof oid === 'string') return oid
+  if (oid && typeof oid === 'object' && oid.$oid) return oid.$oid
+  return String(oid)
 }

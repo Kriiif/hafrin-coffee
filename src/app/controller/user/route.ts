@@ -187,11 +187,16 @@ export async function POST(request: Request) {
 
     if (hasDataApi) {
       console.log("POST /controller/user - Using Data API login");
-      // Only fetch fields needed for login verification + response
+      
+      const startTime = Date.now();
+      
+      // Minimal projection - only what's needed for verification
       const doc: any = await dataApiFindOne("users", { 
         filter: { username }, 
-        projection: { username: 1, password: 1, name: 1, email: 1, gender: 1, picture: 1, phone: 1, address: 1 }
+        projection: { _id: 1, username: 1, password: 1, name: 1, email: 1, gender: 1, picture: 1, phone: 1, address: 1 }
       });
+      
+      console.log(`Data API findOne took ${Date.now() - startTime}ms`);
       
       if (!doc || doc.password !== password) {
         return NextResponse.json({ success: false, error: "Invalid credentials" }, { status: 401 });
@@ -205,10 +210,10 @@ export async function POST(request: Request) {
           username: doc.username,
           name: doc.name,
           email: doc.email,
-          gender: doc.gender || null,
-          picture: doc.picture || null,
-          phone: doc.phone || null,
-          address: doc.address || null
+          gender: doc.gender || "",
+          picture: doc.picture || "",
+          phone: doc.phone || "",
+          address: doc.address || ""
         }
       });
       
@@ -220,6 +225,7 @@ export async function POST(request: Request) {
         maxAge: 60 * 60 * 24 * 7
       });
       
+      console.log(`Total login processing took ${Date.now() - startTime}ms`);
       return response;
     }
 
