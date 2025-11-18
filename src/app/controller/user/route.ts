@@ -44,7 +44,7 @@ export async function GET() {
         return resp;
       }
 
-      return NextResponse.json({
+      const response = NextResponse.json({
         success: true,
         user: {
           _id: String(doc._id?.$oid || doc._id),
@@ -60,6 +60,10 @@ export async function GET() {
           address: doc.address || null
         }
       });
+      
+      // Cache auth check for 5 minutes
+      response.headers.set('Cache-Control', 'private, max-age=300, stale-while-revalidate=60');
+      return response;
     }
 
   // Fallback to Mongoose (local dev). Use dynamic imports to avoid bundling in Workers
@@ -122,21 +126,25 @@ export async function PUT(request: Request) {
 
     if (hasDataApi) {
       console.log("PUT /controller/user - Using Data API");
-      await dataApiUpdateOne("users", {
-        filter: { _id: toObjectId(sessionId) },
-        update: { $set: updates }
-      });
-      const doc: any = await dataApiFindOne("users", { filter: { _id: toObjectId(sessionId) }, projection: { password: 0 } });
+      const filter = { _id: toObjectId(sessionId) };
+      const projection = { password: 0 };
+      
+      // Parallel update and fetch for faster response
+      const [_, doc] = await Promise.all([
+        dataApiUpdateOne("users", { filter, update: { $set: updates } }),
+        dataApiFindOne("users", { filter, projection })
+      ]);
+      
       if (!doc) return NextResponse.json({ success: false, error: "User not found" }, { status: 404 });
       return NextResponse.json({ success: true, user: {
-        _id: String(doc._id?.$oid || doc._id),
-        username: doc.username,
-        name: doc.name,
-        email: doc.email,
-        gender: doc.gender || null,
-        picture: doc.picture || null,
-        phone: doc.phone || null,
-        address: doc.address || null
+        _id: String((doc as any)._id?.$oid || (doc as any)._id),
+        username: (doc as any).username,
+        name: (doc as any).name,
+        email: (doc as any).email,
+        gender: (doc as any).gender || null,
+        picture: (doc as any).picture || null,
+        phone: (doc as any).phone || null,
+        address: (doc as any).address || null
       }});
     }
 
@@ -179,14 +187,21 @@ export async function POST(request: Request) {
 
     if (hasDataApi) {
       console.log("POST /controller/user - Using Data API login");
-      const doc: any = await dataApiFindOne("users", { filter: { username }, projection: {} });
+      // Only fetch fields needed for login verification + response
+      const doc: any = await dataApiFindOne("users", { 
+        filter: { username }, 
+        projection: { username: 1, password: 1, name: 1, email: 1, gender: 1, picture: 1, phone: 1, address: 1 }
+      });
+      
       if (!doc || doc.password !== password) {
         return NextResponse.json({ success: false, error: "Invalid credentials" }, { status: 401 });
       }
+      
+      const userId = String(doc._id?.$oid || doc._id);
       const response = NextResponse.json({
         success: true,
         user: {
-          _id: String(doc._id?.$oid || doc._id),
+          _id: userId,
           username: doc.username,
           name: doc.name,
           email: doc.email,
@@ -196,13 +211,15 @@ export async function POST(request: Request) {
           address: doc.address || null
         }
       });
-      response.cookies.set("session", String(doc._id?.$oid || doc._id), {
+      
+      response.cookies.set("session", userId, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
         path: "/",
         maxAge: 60 * 60 * 24 * 7
       });
+      
       return response;
     }
 
