@@ -20,10 +20,10 @@ export async function connectDB() {
     
     const db = await mongoose.connect(MONGODB_URI, {
       dbName: "hafrincoffee",
-      serverSelectionTimeoutMS: 10000, // 10 second timeout
+      serverSelectionTimeoutMS: 500, // 500ms timeout
       socketTimeoutMS: 45000,
       maxPoolSize: 10,
-      minPoolSize: 2,
+      minPoolSize: 1,
     });
     
     isConnected = db.connection.readyState === 1;
