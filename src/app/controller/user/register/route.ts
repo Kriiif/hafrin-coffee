@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { User } from "@/models/user";
 import mongoose from "mongoose";
+import { dataApiFindOne, dataApiInsertOne } from "@/lib/mongo-data-api";
 
 type RegisterRequest = {
   username: string;
@@ -26,13 +27,54 @@ export async function POST(req: Request) {
       );
     }
 
-    await connectDB();
+    const hasDataApi = Boolean(
+      process.env.MONGODB_DATA_API_URL &&
+      process.env.MONGODB_DATA_API_KEY &&
+      process.env.MONGODB_DATA_SOURCE
+    );
 
+    if (hasDataApi) {
+      // Check duplicates via Data API
+      const existing = await dataApiFindOne("users", { filter: { $or: [{ username }, { email }] } });
+      if (existing) {
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: (existing as any).username === username ? "Username already taken" : "Email already registered"
+          },
+          { status: 400 }
+        );
+      }
+
+      const insertRes = await dataApiInsertOne("users", {
+        document: {
+          username,
+          name,
+          email,
+          password, // TODO: hash in production
+          gender: gender || "other",
+          phone,
+          address,
+        }
+      });
+
+      return NextResponse.json({
+        success: true,
+        user: {
+          _id: insertRes.insertedId,
+          username,
+          name,
+          email,
+        },
+      });
+    }
+
+    // Fallback to Mongoose (local dev)
+    await connectDB();
     // Check if username or email already exists
     const existingUser = await User.findOne({
       $or: [{ username }, { email }],
     });
-
     if (existingUser) {
       return NextResponse.json(
         { 
@@ -44,8 +86,6 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
-
-    // Create new user
     const user = await User.create({
       username,
       name,
@@ -55,8 +95,6 @@ export async function POST(req: Request) {
       phone,
       address,
     });
-
-    // Return success without sensitive data
     return NextResponse.json({
       success: true,
       user: {

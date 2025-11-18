@@ -46,7 +46,7 @@ export function RegisterPage() {
     event.preventDefault()
     setLoading(true)
     try {
-      const res = await fetch('/api/user/register', {
+      const res = await fetch('/controller/user/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)

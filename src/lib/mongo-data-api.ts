@@ -52,3 +52,120 @@ export async function dataApiFind<T = any>(collection: string, opts: FindOptions
   const json = await res.json() as { documents?: T[] }
   return json.documents || []
 }
+
+export type FindOneOptions = {
+  filter: Record<string, unknown>
+  projection?: Record<string, unknown>
+}
+
+export async function dataApiFindOne<T = any>(collection: string, opts: FindOneOptions) {
+  const url = requiredEnv("MONGODB_DATA_API_URL").replace(/\/$/, "") + "/action/findOne"
+  const apiKey = requiredEnv("MONGODB_DATA_API_KEY")
+  const dataSource = requiredEnv("MONGODB_DATA_SOURCE")
+  const database = process.env.MONGODB_DB || "hafrincoffee"
+
+  const body = {
+    dataSource,
+    database,
+    collection,
+    filter: opts.filter || {},
+    projection: opts.projection,
+  }
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "api-key": apiKey,
+      "Accept": "application/json",
+    },
+    body: JSON.stringify(body),
+  })
+
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(`Data API findOne failed: ${res.status} ${res.statusText} - ${text.slice(0, 300)}`)
+  }
+
+  const json = await res.json() as { document?: T }
+  return json.document
+}
+
+export type UpdateOneOptions = {
+  filter: Record<string, unknown>
+  update: Record<string, unknown>
+}
+
+export async function dataApiUpdateOne(collection: string, opts: UpdateOneOptions) {
+  const url = requiredEnv("MONGODB_DATA_API_URL").replace(/\/$/, "") + "/action/updateOne"
+  const apiKey = requiredEnv("MONGODB_DATA_API_KEY")
+  const dataSource = requiredEnv("MONGODB_DATA_SOURCE")
+  const database = process.env.MONGODB_DB || "hafrincoffee"
+
+  const body = {
+    dataSource,
+    database,
+    collection,
+    filter: opts.filter,
+    update: opts.update,
+  }
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "api-key": apiKey,
+      "Accept": "application/json",
+    },
+    body: JSON.stringify(body),
+  })
+
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(`Data API updateOne failed: ${res.status} ${res.statusText} - ${text.slice(0, 300)}`)
+  }
+
+  const json = await res.json() as { matchedCount?: number; modifiedCount?: number }
+  return json
+}
+
+export type InsertOneOptions = {
+  document: Record<string, unknown>
+}
+
+export async function dataApiInsertOne(collection: string, opts: InsertOneOptions) {
+  const url = requiredEnv("MONGODB_DATA_API_URL").replace(/\/$/, "") + "/action/insertOne"
+  const apiKey = requiredEnv("MONGODB_DATA_API_KEY")
+  const dataSource = requiredEnv("MONGODB_DATA_SOURCE")
+  const database = process.env.MONGODB_DB || "hafrincoffee"
+
+  const body = {
+    dataSource,
+    database,
+    collection,
+    document: opts.document,
+  }
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "api-key": apiKey,
+      "Accept": "application/json",
+    },
+    body: JSON.stringify(body),
+  })
+
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(`Data API insertOne failed: ${res.status} ${res.statusText} - ${text.slice(0, 300)}`)
+  }
+
+  const json = await res.json() as { insertedId?: string }
+  return json
+}
+
+// Helper for Extended JSON ObjectId
+export function toObjectId(id: string) {
+  return { $oid: id }
+}

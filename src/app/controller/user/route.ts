@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { User } from "@/models/user";
 import { connectDB } from "@/lib/mongodb";
 import { Types } from "mongoose";
+import { dataApiFindOne, dataApiUpdateOne, toObjectId } from "@/lib/mongo-data-api";
 
 interface UserDocument {
   _id: Types.ObjectId;
@@ -29,21 +30,53 @@ export async function GET() {
       resp.cookies.delete("session");
       return resp;
     }
+    const hasDataApi = Boolean(
+      process.env.MONGODB_DATA_API_URL &&
+      process.env.MONGODB_DATA_API_KEY &&
+      process.env.MONGODB_DATA_SOURCE
+    );
+
+    if (hasDataApi) {
+      console.log("GET /controller/user - Using Data API");
+      const doc: any = await dataApiFindOne("users", {
+        filter: { _id: toObjectId(sessionId) },
+        projection: { password: 0 }
+      });
+
+      if (!doc) {
+        console.log("GET /controller/user - User not found for session (Data API):", sessionId);
+        const resp = NextResponse.json({ success: false, error: "Invalid session" }, { status: 401 });
+        resp.cookies.delete("session");
+        return resp;
+      }
+
+      return NextResponse.json({
+        success: true,
+        user: {
+          _id: String(doc._id?.$oid || doc._id),
+          username: doc.username,
+          name: doc.name,
+          email: doc.email,
+          gender: doc.gender || null,
+          picture: doc.picture || null,
+          provider: doc.provider || null,
+          providerId: doc.providerId || null,
+          oauth: Boolean(doc.oauth),
+          phone: doc.phone || null,
+          address: doc.address || null
+        }
+      });
+    }
 
     await connectDB();
-    
-    // Get user from session (lean returns plain object)
     const userObj: any = await User.findById(sessionId).select("-password").lean();
-
     if (!userObj) {
       console.log("GET /controller/user - User not found for session:", sessionId);
       const resp = NextResponse.json({ success: false, error: "Invalid session" }, { status: 401 });
       resp.cookies.delete("session");
       return resp;
     }
-
     console.log("GET /controller/user - User found:", userObj.username);
-
     return NextResponse.json({
       success: true,
       user: {
@@ -84,11 +117,35 @@ export async function PUT(request: Request) {
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ success: false, error: "No valid fields to update" }, { status: 400 });
     }
+    const hasDataApi = Boolean(
+      process.env.MONGODB_DATA_API_URL &&
+      process.env.MONGODB_DATA_API_KEY &&
+      process.env.MONGODB_DATA_SOURCE
+    );
+
+    if (hasDataApi) {
+      console.log("PUT /controller/user - Using Data API");
+      await dataApiUpdateOne("users", {
+        filter: { _id: toObjectId(sessionId) },
+        update: { $set: updates }
+      });
+      const doc: any = await dataApiFindOne("users", { filter: { _id: toObjectId(sessionId) }, projection: { password: 0 } });
+      if (!doc) return NextResponse.json({ success: false, error: "User not found" }, { status: 404 });
+      return NextResponse.json({ success: true, user: {
+        _id: String(doc._id?.$oid || doc._id),
+        username: doc.username,
+        name: doc.name,
+        email: doc.email,
+        gender: doc.gender || null,
+        picture: doc.picture || null,
+        phone: doc.phone || null,
+        address: doc.address || null
+      }});
+    }
 
     await connectDB();
     const updated = await User.findByIdAndUpdate(sessionId, { $set: updates }, { new: true }).select('-password').lean();
     if (!updated) return NextResponse.json({ success: false, error: "User not found" }, { status: 404 });
-
     const u: any = updated as any;
     return NextResponse.json({ success: true, user: {
       _id: String(u._id),
@@ -115,17 +172,47 @@ export async function POST(request: Request) {
     if (!username || !password) {
       return NextResponse.json({ success: false, error: "Username and password are required" }, { status: 400 });
     }
+    const hasDataApi = Boolean(
+      process.env.MONGODB_DATA_API_URL &&
+      process.env.MONGODB_DATA_API_KEY &&
+      process.env.MONGODB_DATA_SOURCE
+    );
+
+    if (hasDataApi) {
+      console.log("POST /controller/user - Using Data API login");
+      const doc: any = await dataApiFindOne("users", { filter: { username }, projection: {} });
+      if (!doc || doc.password !== password) {
+        return NextResponse.json({ success: false, error: "Invalid credentials" }, { status: 401 });
+      }
+      const response = NextResponse.json({
+        success: true,
+        user: {
+          _id: String(doc._id?.$oid || doc._id),
+          username: doc.username,
+          name: doc.name,
+          email: doc.email,
+          gender: doc.gender || null,
+          picture: doc.picture || null,
+          phone: doc.phone || null,
+          address: doc.address || null
+        }
+      });
+      response.cookies.set("session", String(doc._id?.$oid || doc._id), {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 60 * 60 * 24 * 7
+      });
+      return response;
+    }
 
     await connectDB();
-
     const userObj: any = await User.findOne({ username }).select("+password").lean();
-
     if (!userObj || userObj.password !== password) {
       return NextResponse.json({ success: false, error: "Invalid credentials" }, { status: 401 });
     }
-
     console.log("POST /controller/user - Login successful for:", username);
-
     const response = NextResponse.json({
       success: true,
       user: {
@@ -139,8 +226,6 @@ export async function POST(request: Request) {
         address: userObj.address || null
       }
     });
-
-    // Set cookie with appropriate settings for production
     response.cookies.set("session", String(userObj._id), {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -148,9 +233,7 @@ export async function POST(request: Request) {
       path: "/",
       maxAge: 60 * 60 * 24 * 7 // 7 days
     });
-
     console.log("POST /controller/user - Session cookie set for user:", userObj._id);
-
     return response;
   } catch (err) {
     console.error("POST /controller/user error:", err);
