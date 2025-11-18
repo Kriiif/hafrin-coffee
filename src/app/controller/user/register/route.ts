@@ -1,6 +1,4 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/mongodb";
-import { User } from "@/models/user";
 import mongoose from "mongoose";
 import { dataApiFindOne, dataApiInsertOne } from "@/lib/mongo-data-api";
 
@@ -69,8 +67,10 @@ export async function POST(req: Request) {
       });
     }
 
-    // Fallback to Mongoose (local dev)
-    await connectDB();
+  // Fallback to Mongoose (local dev)
+  const { connectDB } = await import("@/lib/mongodb");
+  const { User } = await import("@/models/user");
+  await connectDB();
     // Check if username or email already exists
     const existingUser = await User.findOne({
       $or: [{ username }, { email }],

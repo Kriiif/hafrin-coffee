@@ -1,17 +1,11 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { User } from "@/models/user";
-import { connectDB } from "@/lib/mongodb";
-import { Types } from "mongoose";
 import { dataApiFindOne, dataApiUpdateOne, toObjectId } from "@/lib/mongo-data-api";
 
-interface UserDocument {
-  _id: Types.ObjectId;
-  username: string;
-  name: string;
-  email: string;
-  password: string;
+function isHexObjectId(id: string) {
+  return /^[a-fA-F0-9]{24}$/.test(id);
 }
+
 
 export async function GET() {
   try {
@@ -24,8 +18,8 @@ export async function GET() {
       return NextResponse.json({ success: false, error: "Not authenticated" }, { status: 401 });
     }
 
-    // Validate ObjectId format
-    if (!Types.ObjectId.isValid(sessionId)) {
+    // Validate ObjectId format (avoid mongoose in workers)
+     if (!isHexObjectId(sessionId)) {
       const resp = NextResponse.json({ success: false, error: "Invalid session format" }, { status: 401 });
       resp.cookies.delete("session");
       return resp;
@@ -68,8 +62,11 @@ export async function GET() {
       });
     }
 
-    await connectDB();
-    const userObj: any = await User.findById(sessionId).select("-password").lean();
+  // Fallback to Mongoose (local dev). Use dynamic imports to avoid bundling in Workers
+  const { connectDB } = await import("@/lib/mongodb");
+  const { User } = await import("@/models/user");
+  await connectDB();
+  const userObj: any = await User.findById(sessionId).select("-password").lean();
     if (!userObj) {
       console.log("GET /controller/user - User not found for session:", sessionId);
       const resp = NextResponse.json({ success: false, error: "Invalid session" }, { status: 401 });
@@ -143,8 +140,10 @@ export async function PUT(request: Request) {
       }});
     }
 
-    await connectDB();
-    const updated = await User.findByIdAndUpdate(sessionId, { $set: updates }, { new: true }).select('-password').lean();
+  const { connectDB } = await import("@/lib/mongodb");
+  const { User } = await import("@/models/user");
+  await connectDB();
+  const updated = await User.findByIdAndUpdate(sessionId, { $set: updates }, { new: true }).select('-password').lean();
     if (!updated) return NextResponse.json({ success: false, error: "User not found" }, { status: 404 });
     const u: any = updated as any;
     return NextResponse.json({ success: true, user: {
@@ -207,8 +206,10 @@ export async function POST(request: Request) {
       return response;
     }
 
-    await connectDB();
-    const userObj: any = await User.findOne({ username }).select("+password").lean();
+  const { connectDB } = await import("@/lib/mongodb");
+  const { User } = await import("@/models/user");
+  await connectDB();
+  const userObj: any = await User.findOne({ username }).select("+password").lean();
     if (!userObj || userObj.password !== password) {
       return NextResponse.json({ success: false, error: "Invalid credentials" }, { status: 401 });
     }
