@@ -28,6 +28,18 @@ export function MenusSection() {
     const fetchMenus = async () => {
       try {
         const res = await fetch("/controller/menu")
+        
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`)
+        }
+        
+        const contentType = res.headers.get("content-type")
+        if (!contentType || !contentType.includes("application/json")) {
+          const text = await res.text()
+          console.error("Non-JSON response:", text.substring(0, 200))
+          throw new Error("Server returned invalid response format")
+        }
+        
         const data = await res.json() as { success: boolean; menus: MenuItem[]; error?: string }
         
         if (!data.success) {
@@ -37,7 +49,7 @@ export function MenusSection() {
         setMenus(data.menus)
       } catch (err) {
         console.error("Error fetching menus:", err)
-        setError("Failed to load menus")
+        setError(err instanceof Error ? err.message : "Failed to load menus")
       } finally {
         setLoading(false)
       }

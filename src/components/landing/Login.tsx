@@ -16,13 +16,16 @@ export function LoginPage() {
   const [password, setPassword] = useState('')
   const [message, setMessage] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [loading, setLoading] = useState(false)
   const router = useRouter()
+  const { login } = useUser()
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
     setMessage('')
+    setLoading(true)
     try {
-      // await login(username, password)
+      await login(username, password)
       toast.success('Login berhasil')
       router.push('/')
     } catch (err) {
@@ -30,6 +33,8 @@ export function LoginPage() {
       const msg = err instanceof Error ? err.message : 'Login failed'
       setMessage(msg)
       toast.error(msg)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -107,8 +112,9 @@ export function LoginPage() {
             <Button
               type="submit"
               className="w-full bg-secondary text-secondary-foreground hover:bg-secondary/90"
+              disabled={loading}
             >
-              Login
+              {loading ? 'Signing in...' : 'Login'}
             </Button>
           </form>
 
