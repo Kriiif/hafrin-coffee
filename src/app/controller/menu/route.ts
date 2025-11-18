@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import { Menu, type IMenu } from "@/models/menu";
+import { dataApiFind } from "@/lib/mongo-data-api";
 import mongoose from "mongoose";
 
 interface LeanMenuDocument extends Omit<IMenu, '_id'> {
@@ -9,21 +10,37 @@ interface LeanMenuDocument extends Omit<IMenu, '_id'> {
 
 export async function GET(req: NextRequest) {
   try {
-    console.log("GET /controller/menu - Connecting to database...");
-    await connectDB();
-    console.log("GET /controller/menu - Database connected, fetching menus...");
+    // If Data API envs are present (Cloudflare Workers), prefer Data API.
+    const hasDataApi = Boolean(
+      process.env.MONGODB_DATA_API_URL &&
+      process.env.MONGODB_DATA_API_KEY &&
+      process.env.MONGODB_DATA_SOURCE
+    );
 
+    if (hasDataApi) {
+      console.log("GET /controller/menu - Using MongoDB Data API");
+      const docs = await dataApiFind<LeanMenuDocument>("menus", { filter: {}, limit: 100 });
+      const transformedMenus = docs.map(menu => ({
+        id: menu._id.toString(),
+        title: menu.name,
+        description: menu.description || "",
+        price: menu.price,
+        imageQuery: menu.pic || menu.name.toLowerCase().replace(/\s+/g, "-"),
+      }));
+      return NextResponse.json({ success: true, menus: transformedMenus });
+    }
+
+    // Fallback to direct mongoose (local dev / Node runtime)
+    console.log("GET /controller/menu - Connecting to MongoDB via Mongoose...");
+    await connectDB();
     const menus = await Menu.find({}).lean() as unknown as LeanMenuDocument[];
-    console.log("GET /controller/menu - Found", menus.length, "menus");
-    
     const transformedMenus = menus.map(menu => ({
       id: menu._id.toString(),
       title: menu.name,
       description: menu.description || "",
       price: menu.price,
-      imageQuery: menu.pic || menu.name.toLowerCase().replace(" ", "-"),
+      imageQuery: menu.pic || menu.name.toLowerCase().replace(/\s+/g, "-"),
     }));
-
     return NextResponse.json({ success: true, menus: transformedMenus });
   } catch (error) {
     console.error("GET /controller/menu error:", error);
