@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
-import { dataApiFindOne, dataApiInsertOne } from "@/lib/mongo-data-api";
+import { connectDB } from "@/lib/mongodb";
+import { User } from "@/models/user";
 
 type RegisterRequest = {
   username: string;
@@ -25,56 +26,14 @@ export async function POST(req: Request) {
       );
     }
 
-    const hasDataApi = Boolean(
-      process.env.MONGODB_DATA_API_URL &&
-      process.env.MONGODB_DATA_API_KEY &&
-      process.env.MONGODB_DATA_SOURCE
-    );
-
-    if (hasDataApi) {
-      // Check duplicates via Data API
-      const existing = await dataApiFindOne("users", { filter: { $or: [{ username }, { email }] } });
-      if (existing) {
-        return NextResponse.json(
-          { 
-            success: false, 
-            error: (existing as any).username === username ? "Username already taken" : "Email already registered"
-          },
-          { status: 400 }
-        );
-      }
-
-      const insertRes = await dataApiInsertOne("users", {
-        document: {
-          username,
-          name,
-          email,
-          password, // TODO: hash in production
-          gender: gender || "other",
-          phone,
-          address,
-        }
-      });
-
-      return NextResponse.json({
-        success: true,
-        user: {
-          _id: insertRes.insertedId,
-          username,
-          name,
-          email,
-        },
-      });
-    }
-
-  // Fallback to Mongoose (local dev)
-  const { connectDB } = await import("@/lib/mongodb");
-  const { User } = await import("@/models/user");
-  await connectDB();
+    console.log("POST /controller/user/register - Using Mongoose");
+    await connectDB();
+    
     // Check if username or email already exists
     const existingUser = await User.findOne({
       $or: [{ username }, { email }],
     });
+    
     if (existingUser) {
       return NextResponse.json(
         { 
@@ -86,6 +45,7 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
+    
     const user = await User.create({
       username,
       name,
@@ -95,6 +55,7 @@ export async function POST(req: Request) {
       phone,
       address,
     });
+    
     return NextResponse.json({
       success: true,
       user: {

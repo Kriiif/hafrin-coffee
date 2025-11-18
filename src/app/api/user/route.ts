@@ -1,7 +1,8 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import type { SafeUser } from "@/types/user";
-import { dataApiFindOne, toObjectId } from "@/lib/mongo-data-api";
+import { connectDB } from "@/lib/mongodb";
+import { User } from "@/models/user";
 
 function isHexObjectId(id: string) {
   return /^[a-fA-F0-9]{24}$/.test(id);
@@ -16,36 +17,13 @@ export async function GET() {
       return NextResponse.json({ success: false, error: "Not authenticated" }, { status: 401 });
     }
 
-    const hasDataApi = Boolean(
-      process.env.MONGODB_DATA_API_URL &&
-      process.env.MONGODB_DATA_API_KEY &&
-      process.env.MONGODB_DATA_SOURCE
-    );
-
-    if (hasDataApi) {
-      if (!isHexObjectId(sessionCookie.value)) {
-        const resp = NextResponse.json({ success: false, error: "Invalid session" }, { status: 401 });
-        resp.cookies.delete("session");
-        return resp;
-      }
-      const doc: any = await dataApiFindOne("users", { filter: { _id: toObjectId(sessionCookie.value) }, projection: { password: 0 } });
-      if (!doc) {
-        const resp = NextResponse.json({ success: false, error: "Invalid session" }, { status: 401 });
-        resp.cookies.delete("session");
-        return resp;
-      }
-      const safeUser: SafeUser = {
-        _id: String(doc._id?.$oid || doc._id),
-        username: doc.username,
-        name: doc.name,
-        email: doc.email
-      };
-      return NextResponse.json({ success: true, user: safeUser });
+    if (!isHexObjectId(sessionCookie.value)) {
+      const resp = NextResponse.json({ success: false, error: "Invalid session" }, { status: 401 });
+      resp.cookies.delete("session");
+      return resp;
     }
 
-    // Fallback to Mongoose (local dev)
-    const { connectDB } = await import("@/lib/mongodb");
-    const { User } = await import("@/models/user");
+    console.log("GET /api/user - Using Mongoose");
     await connectDB();
     const userObj: any = await User.findById(sessionCookie.value).select("-password").lean();
 
@@ -79,37 +57,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: "Username and password are required" }, { status: 400 });
     }
 
-    const hasDataApi = Boolean(
-      process.env.MONGODB_DATA_API_URL &&
-      process.env.MONGODB_DATA_API_KEY &&
-      process.env.MONGODB_DATA_SOURCE
-    );
-
-    if (hasDataApi) {
-      const doc: any = await dataApiFindOne("users", { filter: { username } });
-      if (!doc || doc.password !== password) {
-        return NextResponse.json({ success: false, error: "Invalid credentials" }, { status: 401 });
-      }
-
-      const response = NextResponse.json({ success: true, user: {
-        _id: String(doc._id?.$oid || doc._id),
-        username: doc.username,
-        name: doc.name,
-        email: doc.email
-      }});
-
-      response.cookies.set("session", String(doc._id?.$oid || doc._id), {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        path: "/"
-      });
-
-      return response;
-    }
-
-    const { connectDB } = await import("@/lib/mongodb");
-    const { User } = await import("@/models/user");
+    console.log("POST /api/user - Using Mongoose");
     await connectDB();
     const userObj: any = await User.findOne({ username }).select("+password").lean();
 

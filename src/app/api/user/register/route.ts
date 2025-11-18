@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { dataApiFindOne, dataApiInsertOne } from "@/lib/mongo-data-api";
+import { connectDB } from "@/lib/mongodb";
+import { User } from "@/models/user";
 
 type RegisterRequest = {
   username: string;
@@ -24,44 +25,9 @@ export async function POST(req: Request) {
       );
     }
 
-    // Prefer Data API for Workers
-    const hasDataApi = Boolean(
-      process.env.MONGODB_DATA_API_URL &&
-      process.env.MONGODB_DATA_API_KEY &&
-      process.env.MONGODB_DATA_SOURCE
-    );
-
-    if (hasDataApi) {
-      const existing = await dataApiFindOne("users", { filter: { $or: [{ username }, { email }] } });
-      if (existing) {
-        return NextResponse.json(
-          { success: false, error: (existing as any).username === username ? "Username already taken" : "Email already registered" },
-          { status: 400 }
-        );
-      }
-
-      const insertRes = await dataApiInsertOne("users", {
-        document: {
-          username,
-          name,
-          email,
-          password, // TODO: hash in production
-          gender: gender || "other",
-          phone,
-          address,
-        }
-      });
-
-      return NextResponse.json({
-        success: true,
-        user: { _id: insertRes.insertedId, username, name, email },
-      });
-    }
-
-    // Fallback: dynamic import Mongoose for local dev
-    const { connectDB } = await import("@/lib/mongodb");
-    const { User } = await import("@/models/user");
+    console.log("POST /api/user/register - Using Mongoose");
     await connectDB();
+    
     const existingUser = await User.findOne({ $or: [{ username }, { email }] });
     if (existingUser) {
       return NextResponse.json(
@@ -69,6 +35,7 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
+    
     const user = await User.create({ username, name, email, password, gender: gender || "other", phone, address });
     return NextResponse.json({ success: true, user: { _id: user._id, username, name, email } });
   } catch (err) {

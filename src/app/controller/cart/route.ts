@@ -1,48 +1,11 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { dataApiFindOne, dataApiFind, dataApiInsertOne, dataApiUpdateOne, dataApiDeleteOne, toObjectId, fromObjectId } from "@/lib/mongo-data-api";
+import { connectDB } from "@/lib/mongodb";
+import { Cart } from "@/models/cart";
+import { Menu } from "@/models/menu";
 
 function isHexObjectId(id?: string | null) {
 	return typeof id === "string" && /^[a-fA-F0-9]{24}$/.test(id);
-}
-
-// Hydrate cart with menu details from a separate fetch
-async function hydrateCartWithMenus(cartDoc: any) {
-	if (!cartDoc || !cartDoc.items || cartDoc.items.length === 0) {
-		return cartDoc;
-	}
-
-	// Get unique menu IDs (ensure they are typed as strings)
-	const menuIds: string[] = [...new Set<string>(cartDoc.items.map((item: any) => String(fromObjectId(item.idProduct))))];
-
-	// Fetch all menus in one call
-	const menus = await dataApiFind("menus", {
-		filter: { _id: { $in: menuIds.map((id: string) => toObjectId(id)) } },
-		projection: { name: 1, price: 1, pic: 1 }
-	});
-
-	// Create a map for fast lookup
-	const menuMap = new Map();
-	menus.forEach((menu: any) => {
-		menuMap.set(fromObjectId(menu._id), menu);
-	});
-
-	// Hydrate items
-	cartDoc.items = cartDoc.items.map((item: any) => {
-		const menuId = fromObjectId(item.idProduct);
-		const menu = menuMap.get(menuId);
-		return {
-			...item,
-			idProduct: menu ? {
-				_id: menuId,
-				name: menu.name,
-				price: menu.price,
-				pic: menu.pic
-			} : { _id: menuId, name: "Unknown", price: 0, pic: "" }
-		};
-	});
-
-	return cartDoc;
 }
 
 export async function GET(req: Request) {
@@ -61,25 +24,7 @@ export async function GET(req: Request) {
 			return NextResponse.json({ success: false, error: "Invalid or missing idUser" }, { status: 400 });
 		}
 
-		const hasDataApi = Boolean(
-			process.env.MONGODB_DATA_API_URL &&
-			process.env.MONGODB_DATA_API_KEY &&
-			process.env.MONGODB_DATA_SOURCE
-		);
-
-		if (hasDataApi) {
-			let cartDoc: any = await dataApiFindOne("carts", { filter: { idUser: toObjectId(idUser!) } });
-
-			if (cartDoc) {
-				cartDoc = await hydrateCartWithMenus(cartDoc);
-			}
-
-			return NextResponse.json({ success: true, cart: cartDoc });
-		}
-
-		// Fallback to Mongoose
-		const { connectDB } = await import("@/lib/mongodb");
-		const { Cart } = await import("@/models/cart");
+		console.log("GET /controller/cart - Using Mongoose");
 		await connectDB();
 
 		let cart = await Cart.findOne({ idUser }).populate({
@@ -108,93 +53,7 @@ export async function POST(req: Request) {
 			return NextResponse.json({ success: false, error: "Invalid customizations" }, { status: 400 });
 		}
 
-		const hasDataApi = Boolean(
-			process.env.MONGODB_DATA_API_URL &&
-			process.env.MONGODB_DATA_API_KEY &&
-			process.env.MONGODB_DATA_SOURCE
-		);
-
-		if (hasDataApi) {
-			let cartDoc: any = await dataApiFindOne("carts", { filter: { idUser: toObjectId(idUser) } });
-
-			if (!cartDoc) {
-				// Create new cart
-				const newCart = {
-					idUser: toObjectId(idUser),
-					items: [{
-						idProduct: toObjectId(idProduct),
-						quantity,
-						sugar: customizations.sugar,
-						ice: customizations.ice,
-						additions: customizations.additions || []
-					}]
-				};
-
-				await dataApiInsertOne("carts", { document: newCart });
-				cartDoc = await dataApiFindOne("carts", { filter: { idUser: toObjectId(idUser) } });
-				cartDoc = await hydrateCartWithMenus(cartDoc);
-				return NextResponse.json({ success: true, cart: cartDoc }, { status: 201 });
-			}
-
-			// Check if menu exists
-			const menuExists = await dataApiFindOne("menus", { filter: { _id: toObjectId(idProduct) }, projection: { _id: 1 } });
-			if (!menuExists) {
-				return NextResponse.json({ success: false, error: "Menu item not found" }, { status: 404 });
-			}
-
-			// Find existing item with same customizations
-			const items = cartDoc.items || [];
-			let existingIndex = -1;
-
-			for (let i = 0; i < items.length; i++) {
-				const item = items[i];
-				const itemProductId = fromObjectId(item.idProduct);
-
-				if (itemProductId === idProduct &&
-					item.sugar === customizations.sugar &&
-					item.ice === customizations.ice) {
-
-					const itemAdditions = item.additions || [];
-					const newAdditions = customizations.additions || [];
-
-					if (itemAdditions.length === newAdditions.length) {
-						const sortedItemAdditions = [...itemAdditions].sort();
-						const sortedNewAdditions = [...newAdditions].sort();
-
-						if (sortedItemAdditions.every((addition: string, index: number) => addition === sortedNewAdditions[index])) {
-							existingIndex = i;
-							break;
-						}
-					}
-				}
-			}
-
-			if (existingIndex >= 0) {
-				items[existingIndex].quantity += quantity;
-			} else {
-				items.push({
-					idProduct: toObjectId(idProduct),
-					quantity,
-					sugar: customizations.sugar,
-					ice: customizations.ice,
-					additions: customizations.additions || []
-				});
-			}
-
-			await dataApiUpdateOne("carts", {
-				filter: { idUser: toObjectId(idUser) },
-				update: { $set: { items } }
-			});
-
-			cartDoc = await dataApiFindOne("carts", { filter: { idUser: toObjectId(idUser) } });
-			cartDoc = await hydrateCartWithMenus(cartDoc);
-			return NextResponse.json({ success: true, cart: cartDoc });
-		}
-
-		// Fallback to Mongoose
-		const { connectDB } = await import("@/lib/mongodb");
-		const { Cart } = await import("@/models/cart");
-		const { Menu } = await import("@/models/menu");
+		console.log("POST /controller/cart - Using Mongoose");
 		await connectDB();
 
 		let cart = await Cart.findOne({ idUser });
@@ -272,66 +131,7 @@ export async function PUT(req: Request) {
 			return NextResponse.json({ success: false, error: "Invalid input (idUser, idProduct, quantity required)" }, { status: 400 });
 		}
 
-		const hasDataApi = Boolean(
-			process.env.MONGODB_DATA_API_URL &&
-			process.env.MONGODB_DATA_API_KEY &&
-			process.env.MONGODB_DATA_SOURCE
-		);
-
-		if (hasDataApi) {
-			let cartDoc: any = await dataApiFindOne("carts", { filter: { idUser: toObjectId(idUser) } });
-			if (!cartDoc) return NextResponse.json({ success: false, error: "Cart not found" }, { status: 404 });
-
-			const { sugar, ice, additions } = customizations || {};
-			const items = cartDoc.items || [];
-			let matchedIndex = -1;
-
-			for (let i = 0; i < items.length; i++) {
-				const item = items[i];
-				const itemProductId = fromObjectId(item.idProduct);
-
-				if (itemProductId === idProduct &&
-					item.sugar === sugar &&
-					item.ice === ice) {
-
-					const itemAdditions = item.additions || [];
-					const updateAdditions = additions || [];
-
-					if (itemAdditions.length === updateAdditions.length) {
-						const sortedItemAdditions = [...itemAdditions].sort();
-						const sortedUpdateAdditions = [...updateAdditions].sort();
-
-						if (sortedItemAdditions.every((addition: string, index: number) => addition === sortedUpdateAdditions[index])) {
-							matchedIndex = i;
-							break;
-						}
-					}
-				}
-			}
-
-			if (matchedIndex === -1) {
-				return NextResponse.json({ success: false, error: "Item not found in cart" }, { status: 404 });
-			}
-
-			if (quantity <= 0) {
-				items.splice(matchedIndex, 1);
-			} else {
-				items[matchedIndex].quantity = quantity;
-			}
-
-			await dataApiUpdateOne("carts", {
-				filter: { idUser: toObjectId(idUser) },
-				update: { $set: { items } }
-			});
-
-			cartDoc = await dataApiFindOne("carts", { filter: { idUser: toObjectId(idUser) } });
-			cartDoc = await hydrateCartWithMenus(cartDoc);
-			return NextResponse.json({ success: true, cart: cartDoc });
-		}
-
-		// Fallback to Mongoose
-		const { connectDB } = await import("@/lib/mongodb");
-		const { Cart } = await import("@/models/cart");
+		console.log("PUT /controller/cart - Using Mongoose");
 		await connectDB();
 
 		let cart = await Cart.findOne({ idUser });
@@ -389,65 +189,7 @@ export async function DELETE(req: Request) {
 			return NextResponse.json({ success: false, error: "Invalid or missing idUser" }, { status: 400 });
 		}
 
-		const hasDataApi = Boolean(
-			process.env.MONGODB_DATA_API_URL &&
-			process.env.MONGODB_DATA_API_KEY &&
-			process.env.MONGODB_DATA_SOURCE
-		);
-
-		if (hasDataApi) {
-			if (deleteCart) {
-				await dataApiDeleteOne("carts", { filter: { idUser: toObjectId(idUser) } });
-				return NextResponse.json({ success: true, message: "Cart deleted" });
-			}
-
-			if (!isHexObjectId(idProduct)) {
-				return NextResponse.json({ success: false, error: "Invalid or missing idProduct" }, { status: 400 });
-			}
-
-			let cartDoc: any = await dataApiFindOne("carts", { filter: { idUser: toObjectId(idUser) } });
-			if (!cartDoc) return NextResponse.json({ success: false, error: "Cart not found" }, { status: 404 });
-
-			const { sugar, ice, additions } = customizations || {};
-			let items = cartDoc.items || [];
-
-			if (Object.keys(customizations || {}).length > 0) {
-				// Remove specific item with matching customizations
-				items = items.filter((item: any) => {
-					const itemProductId = fromObjectId(item.idProduct);
-
-					if (itemProductId !== idProduct || item.sugar !== sugar || item.ice !== ice) {
-						return true;
-					}
-
-					const itemAdditions = item.additions || [];
-					const deleteAdditions = additions || [];
-
-					if (itemAdditions.length !== deleteAdditions.length) return true;
-
-					const sortedItemAdditions = [...itemAdditions].sort();
-					const sortedDeleteAdditions = [...deleteAdditions].sort();
-
-					return !sortedItemAdditions.every((addition: string, index: number) => addition === sortedDeleteAdditions[index]);
-				});
-			} else {
-				// Legacy: remove all items with matching product ID
-				items = items.filter((item: any) => fromObjectId(item.idProduct) !== idProduct);
-			}
-
-			await dataApiUpdateOne("carts", {
-				filter: { idUser: toObjectId(idUser) },
-				update: { $set: { items } }
-			});
-
-			cartDoc = await dataApiFindOne("carts", { filter: { idUser: toObjectId(idUser) } });
-			cartDoc = await hydrateCartWithMenus(cartDoc);
-			return NextResponse.json({ success: true, cart: cartDoc });
-		}
-
-		// Fallback to Mongoose
-		const { connectDB } = await import("@/lib/mongodb");
-		const { Cart } = await import("@/models/cart");
+		console.log("DELETE /controller/cart - Using Mongoose");
 		await connectDB();
 
 		if (deleteCart) {
