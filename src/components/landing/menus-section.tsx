@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { motion, type Variants } from "framer-motion"
 import { Skeleton } from "@/components/ui/skeleton"
 import { MenuCard, type MenuItem } from "./menu-card"
+import { fetchJson } from "@/lib/http"
 
 const container = {
   hidden: { opacity: 0, y: 10 },
@@ -27,20 +28,7 @@ export function MenusSection() {
   useEffect(() => {
     const fetchMenus = async () => {
       try {
-        const res = await fetch("/controller/menu")
-        
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`)
-        }
-        
-        const contentType = res.headers.get("content-type")
-        if (!contentType || !contentType.includes("application/json")) {
-          const text = await res.text()
-          console.error("Non-JSON response:", text.substring(0, 200))
-          throw new Error("Server returned invalid response format")
-        }
-        
-        const data = await res.json() as { success: boolean; menus: MenuItem[]; error?: string }
+        const data = await fetchJson<{ success: boolean; menus: MenuItem[]; error?: string }>("/controller/menu", { timeoutMs: 8000, retries: 2 })
         
         if (!data.success) {
           throw new Error(data.error || "Failed to fetch menus")

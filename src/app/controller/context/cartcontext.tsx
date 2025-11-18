@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useEffect, ReactNode, useCallback 
 import { toast } from "sonner"
 import { useUser } from "@/app/controller/context/usercontext"
 import { useRouter } from "next/navigation"
+import { fetchJson } from "@/lib/http"
 
 export type CartItem = {
   quantity: number
@@ -51,8 +52,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       setLoading(true)
       console.log("🔍 Fetching cart for user:", user._id)
       
-      const res = await fetch(`/controller/cart?idUser=${user._id}`)
-      const data = await res.json() as ApiResponse
+  const data = await fetchJson<ApiResponse>(`/controller/cart?idUser=${user._id}`, { timeoutMs: 9000, retries: 2 })
       
       console.log("📦 Cart data received:", data)
       
@@ -99,7 +99,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     try {
       setLoading(true)
       // Always add as new item and let the server handle combinations
-      const res = await fetch("/controller/cart", {
+      const data = await fetchJson<ApiResponse>("/controller/cart", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -113,13 +113,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             additions: item.additions,
           }
         }),
-      });
-
-      const data = await res.json() as ApiResponse;
-
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to add item");
-      }
+        timeoutMs: 9000,
+        retries: 1,
+      })
 
       if (data.success && data.cart) {
         await fetchCart(); // Refresh cart data
@@ -161,7 +157,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     );
 
     try {
-      const res = await fetch("/controller/cart", {
+      const data = await fetchJson<ApiResponse>("/controller/cart", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -170,10 +166,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
           quantity,
           customizations: customizations || undefined,
         }),
-      });
+        timeoutMs: 9000,
+        retries: 1,
+      })
 
-      const data = await res.json() as ApiResponse;
-      
       if (!data.success) {
         // If server update fails, revert the local change
         await fetchCart();
@@ -196,7 +192,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     try {
       setLoading(true)
-      const res = await fetch("/controller/cart", {
+      const data = await fetchJson<ApiResponse>("/controller/cart", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -204,8 +200,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
           idProduct,
           customizations
         }),
+        timeoutMs: 9000,
+        retries: 1,
       })
-      const data = await res.json() as ApiResponse
       if (data.success) {
         await fetchCart()
         toast.success("Item removed")
@@ -229,15 +226,16 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     try {
       setLoading(true)
-      const res = await fetch("/controller/cart", {
+      const data = await fetchJson<ApiResponse>("/controller/cart", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           idUser: user._id,
           deleteCart: true,
         }),
+        timeoutMs: 9000,
+        retries: 1,
       })
-      const data = await res.json() as ApiResponse
       if (data.success) {
         setCart([])
         toast.success("Cart cleared")
