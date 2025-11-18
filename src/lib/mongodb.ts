@@ -11,22 +11,32 @@ let isConnected = false;
 export async function connectDB() {
   if (isConnected && mongoose.connection.readyState === 1) {
     console.log("⚡ MongoDB already connected");
-    return;
+    return true;
   }
 
   try {
     console.log("🔄 Connecting to MongoDB...");
+    console.log("MONGODB_URI exists:", Boolean(MONGODB_URI));
+    
     const db = await mongoose.connect(MONGODB_URI, {
       dbName: "hafrincoffee",
-      serverSelectionTimeoutMS: 5000, // 5 second timeout
+      serverSelectionTimeoutMS: 10000, // 10 second timeout
       socketTimeoutMS: 45000,
+      maxPoolSize: 10,
+      minPoolSize: 2,
     });
+    
     isConnected = db.connection.readyState === 1;
-
     console.log("✅ MongoDB Connected successfully");
+    return true;
   } catch (err) {
     console.error("❌ MongoDB connection error:", err);
+    console.error("Error details:", {
+      message: err instanceof Error ? err.message : 'Unknown error',
+      name: err instanceof Error ? err.name : 'Unknown',
+      stack: err instanceof Error ? err.stack : 'No stack'
+    });
     isConnected = false;
-    throw new Error(`Database connection failed: ${err instanceof Error ? err.message : 'Unknown error'}`); 
+    return false;
   }
 }

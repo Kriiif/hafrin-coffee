@@ -24,8 +24,14 @@ export async function GET() {
       return resp;
     }
 
-    console.log("GET /controller/user - Using Mongoose");
-    await connectDB();
+    console.log("GET /controller/user - Connecting to database");
+    const connected = await connectDB();
+    if (!connected) {
+      console.error("GET /controller/user - Database connection failed");
+      return NextResponse.json({ success: false, error: "Database connection failed" }, { status: 503 });
+    }
+    
+    console.log("GET /controller/user - Querying user");
     const userObj: any = await User.findById(sessionId).select("-password").lean();
     
     if (!userObj) {
@@ -53,11 +59,17 @@ export async function GET() {
       }
     });
     
+    response.headers.set('Content-Type', 'application/json');
     response.headers.set('Cache-Control', 'private, max-age=300, stale-while-revalidate=60');
     return response;
   } catch (err) {
     console.error("GET /controller/user error:", err);
-    return NextResponse.json({ success: false, error: "Authentication check failed" }, { status: 500 });
+    console.error("Error details:", err instanceof Error ? err.message : "Unknown");
+    return NextResponse.json({ 
+      success: false, 
+      error: "Authentication check failed",
+      details: err instanceof Error ? err.message : "Unknown error"
+    }, { status: 500 });
   }
 }
 
@@ -105,7 +117,17 @@ export async function PUT(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json() as any;
+    console.log("POST /controller/user - Starting login");
+    
+    // Parse body with error handling
+    let body: any;
+    try {
+      body = await request.json();
+    } catch (parseError) {
+      console.error("POST /controller/user - JSON parse error:", parseError);
+      return NextResponse.json({ success: false, error: "Invalid request body" }, { status: 400 });
+    }
+    
     const username = typeof body?.username === 'string' ? body.username : undefined;
     const password = typeof body?.password === 'string' ? body.password : undefined;
 
@@ -113,11 +135,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: "Username and password are required" }, { status: 400 });
     }
 
-    console.log("POST /controller/user - Using Mongoose login");
-    await connectDB();
+    console.log("POST /controller/user - Attempting login for:", username);
+    
+    // Connect to database with error handling
+    const connected = await connectDB();
+    if (!connected) {
+      console.error("POST /controller/user - Database connection failed");
+      return NextResponse.json({ success: false, error: "Database connection failed" }, { status: 503 });
+    }
+    
+    console.log("POST /controller/user - Database connected, querying user");
     const userObj: any = await User.findOne({ username }).select("+password").lean();
     
     if (!userObj || userObj.password !== password) {
+      console.log("POST /controller/user - Invalid credentials");
       return NextResponse.json({ success: false, error: "Invalid credentials" }, { status: 401 });
     }
     
@@ -136,6 +167,7 @@ export async function POST(request: Request) {
       }
     });
     
+    response.headers.set('Content-Type', 'application/json');
     response.cookies.set("session", String(userObj._id), {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -148,7 +180,12 @@ export async function POST(request: Request) {
     return response;
   } catch (err) {
     console.error("POST /controller/user error:", err);
-    return NextResponse.json({ success: false, error: "Login failed" }, { status: 500 });
+    console.error("Error stack:", err instanceof Error ? err.stack : 'No stack');
+    return NextResponse.json({ 
+      success: false, 
+      error: "Login failed",
+      details: err instanceof Error ? err.message : "Unknown error"
+    }, { status: 500 });
   }
 }
 

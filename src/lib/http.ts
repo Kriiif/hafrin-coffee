@@ -5,7 +5,7 @@ export type FetchJsonOptions = RequestInit & {
 }
 
 export async function fetchJson<T = any>(url: string, options: FetchJsonOptions = {}): Promise<T> {
-  const { timeoutMs = 8000, retries = 2, ...init } = options
+  const { timeoutMs = 8000, retries = 8, ...init } = options
 
   let attempt = 0
   let lastErr: any
