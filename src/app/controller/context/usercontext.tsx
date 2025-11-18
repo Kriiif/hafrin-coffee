@@ -37,6 +37,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const checkAuth = async () => {
     try {
       const res = await fetch("/controller/user")
+      
+      // 401 is expected when not logged in, don't treat it as an error
+      if (res.status === 401) {
+        setUser(null)
+        setLoading(false)
+        return
+      }
+      
       const data = await res.json() as { success: boolean; user?: any; error?: string }
       
       if (data.success && data.user) {
@@ -51,6 +59,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         setUser(null)
       }
     } catch (err) {
+      // Only log unexpected errors (not 401)
       console.error("Auth check failed:", err)
       setUser(null)
     } finally {

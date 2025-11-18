@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from "next/font/google";
-import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 import { Toaster } from 'react-hot-toast';
 import { CartProvider } from '@/app/controller/context/cartcontext';
@@ -32,7 +31,6 @@ export default function RootLayout({
         <UserProvider>
           <CartProvider>
             {children}
-            <Analytics />
             <Toaster position="bottom-center" />
           </CartProvider>
         </UserProvider>
