@@ -51,6 +51,7 @@ export async function GET() {
         username: userObj.username,
         name: userObj.name,
         email: userObj.email,
+        gender: userObj.gender || null,
         picture: userObj.picture || null,
         provider: userObj.provider || null,
         providerId: userObj.providerId || null,
@@ -72,12 +73,13 @@ export async function PUT(request: Request) {
     if (!sessionId) return NextResponse.json({ success: false, error: "Not authenticated" }, { status: 401 });
 
     const body = await request.json() as any;
-    const updates: any = {};
+  const updates: any = {};
     if (typeof body.name === 'string') updates.name = body.name;
     if (typeof body.username === 'string') updates.username = body.username;
     if (typeof body.phone === 'string') updates.phone = body.phone;
     if (typeof body.address === 'string') updates.address = body.address;
     if (typeof body.picture === 'string') updates.picture = body.picture;
+  if (typeof body.gender === 'string' && ['male','female','other'].includes(body.gender)) updates.gender = body.gender;
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ success: false, error: "No valid fields to update" }, { status: 400 });
@@ -93,6 +95,7 @@ export async function PUT(request: Request) {
       username: u.username,
       name: u.name,
       email: u.email,
+      gender: u.gender || null,
       picture: u.picture || null,
       phone: u.phone || null,
       address: u.address || null
@@ -130,6 +133,7 @@ export async function POST(request: Request) {
         username: userObj.username,
         name: userObj.name,
         email: userObj.email,
+        gender: userObj.gender || null,
         picture: userObj.picture || null,
         phone: userObj.phone || null,
         address: userObj.address || null

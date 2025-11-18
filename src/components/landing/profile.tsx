@@ -38,10 +38,11 @@ export function ProfilePage() {
     if (user) {
       setNamaAsli(user.name || '')
       setUsername(user.username || '')
-      setNomorHp((user as any).phone || '')
-      setAlamat((user as any).address || '')
+      setNomorHp(user.phone || '')
+      setAlamat(user.address || '')
       setCurrentEmail(user.email || '')
       setAvatarUrl(user.picture || '')
+      setGender(user.gender || '')
     }
   }, [user])
   
@@ -70,6 +71,7 @@ export function ProfilePage() {
           body: JSON.stringify({
             name: namaAsli,
             username,
+            gender,
             phone: nomorHp,
             address: alamat,
             picture: avatarUrl

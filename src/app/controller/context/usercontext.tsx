@@ -9,8 +9,9 @@ type User = {
   name: string
   email: string
   picture?: string | null
-  phone?: string | null
-  address?: string | null
+  phone: string
+  address: string
+  gender: string
 }
 
 type UserContextType = {
@@ -53,7 +54,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
           username: data.user.username,
           name: data.user.name,
           email: data.user.email,
-          picture: data.user.picture || null
+          gender: data.user.gender || "",
+          picture: data.user.picture || null,
+          phone: data.user.phone || "",
+          address: data.user.address || "",
         })
       } else {
         setUser(null)
@@ -95,7 +99,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
         username: data.user.username,
         name: data.user.name,
         email: data.user.email,
-        picture: data.user.picture || null
+        gender: data.user.gender || "",
+        picture: data.user.picture || null,
+        phone: data.user.phone || "",
+        address: data.user.address || "",
       })
     } catch (err) {
       console.error("Login failed:", err)
