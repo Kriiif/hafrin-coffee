@@ -30,18 +30,18 @@ interface NavbarProps {
 export function Navbar({
   bgClass = "bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60",
 }: NavbarProps) {
-  // 2. Initialize the router
   const router = useRouter()
 
-  // 3. Create a handler function for logging out
-  const { logout } = useUser()
+  // 1. Ambil 'user' dan 'loading' selain 'logout'
+  const { user, logout, loading } = useUser()
 
   const handleLogout = async () => {
     try {
       await logout()
+      // Redirect ke login setelah logout
+      router.push('/login')
     } catch (err) {
       console.error('Logout failed from navbar:', err)
-      // Still navigate to login as a fallback
       router.push('/login')
     }
   }
@@ -55,71 +55,90 @@ export function Navbar({
         </Link>
 
         <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Cart"
-            className="h-12 w-12"
-            asChild
-          >
-            <Link href="/cart">
-              <ShoppingCart className="h-7 w-7" />
-            </Link>
-          </Button>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+          {/* 2. Logika Conditional Rendering */}
+          {loading ? (
+             // Tampilan saat memuat (mencegah layout bergeser/flickering)
+             <div className="flex gap-2">
+               <div className="h-10 w-10 bg-muted rounded-full animate-pulse" />
+               <div className="h-10 w-10 bg-muted rounded-full animate-pulse" />
+             </div>
+          ) : user ? (
+            // --- TAMPILAN USER (SUDAH LOGIN) ---
+            <>
               <Button
                 variant="ghost"
                 size="icon"
-                aria-label="Profile"
+                aria-label="Cart"
                 className="h-12 w-12"
+                asChild
               >
-                <User className="h-7 w-7" />
+                <Link href="/cart">
+                  <ShoppingCart className="h-7 w-7" />
+                </Link>
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuGroup>
-                <DropdownMenuItem asChild>
-                  <Link href="/profile">
-                    <User className="mr-2 h-4 w-4" />
-                    <span>Profile</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/history">
-                    <History className="mr-2 h-4 w-4" />
-                    <span>History</span>
-                  </Link>
-                </DropdownMenuItem>
-              </DropdownMenuGroup>
-              <DropdownMenuSeparator />
-              <DropdownMenuGroup>
-                <DropdownMenuItem asChild>
-                  <Link href="/#about">
-                    <Info className="mr-2 h-4 w-4" />
-                    <span>About Us</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/#menus">
-                    <BookMarked className="mr-2 h-4 w-4" />
-                    <span>Menu</span>
-                  </Link>
-                </DropdownMenuItem>
-              </DropdownMenuGroup>
-              <DropdownMenuSeparator />
 
-              {/* 4. Add the onClick handler to the Log Out item */}
-              <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
-                {/* <-- CHANGED: Removed the empty <Link> tag */}
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Log Out</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Profile"
+                    className="h-12 w-12"
+                  >
+                    <User className="h-7 w-7" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  {/* Tampilkan nama user jika ada */}
+                  <DropdownMenuLabel>Hi, {user.username || "User"}</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuGroup>
+                    <DropdownMenuItem asChild>
+                      <Link href="/profile">
+                        <User className="mr-2 h-4 w-4" />
+                        <span>Profile</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/history">
+                        <History className="mr-2 h-4 w-4" />
+                        <span>History</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  </DropdownMenuGroup>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuGroup>
+                    <DropdownMenuItem asChild>
+                      <Link href="/#about">
+                        <Info className="mr-2 h-4 w-4" />
+                        <span>About Us</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/#menus">
+                        <BookMarked className="mr-2 h-4 w-4" />
+                        <span>Menu</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  </DropdownMenuGroup>
+                  <DropdownMenuSeparator />
+
+                  <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-destructive focus:text-destructive">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Log Out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
+          ) : (
+            // --- TAMPILAN GUEST (BELUM LOGIN) ---
+            <Button asChild className="bg-secondary text-secondary-foreground hover:opacity-90 font-semibold">
+              <Link href="/login">
+                <LogIn className="mr-2 h-4 w-4" />
+                Login
+              </Link>
+            </Button>
+          )}
         </div>
       </div>
     </header>
