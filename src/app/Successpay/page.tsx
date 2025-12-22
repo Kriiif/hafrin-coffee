@@ -37,7 +37,7 @@ export default function SuccessPayPage() {
         body: JSON.stringify({ orderId, delivery: { name, phone, address, time } }),
       });
 
-      const data = await res.json().catch(() => ({}));
+      const data = await res.json().catch(() => ({})) as any;
       if (!res.ok || !data || !data.success) {
         console.error('Failed to save delivery info', data);
         toast.error('Failed to save delivery info');
