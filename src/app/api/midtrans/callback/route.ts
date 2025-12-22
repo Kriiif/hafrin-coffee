@@ -8,10 +8,16 @@ export async function POST(req: Request) {
   try {
     const body = await req.json() as any;
 
+    // Log incoming payload (debug only) when DEBUG_MIDTRANS_CALLBACK is set
+    if (process.env.DEBUG_MIDTRANS_CALLBACK === 'true') {
+      try { console.info('Midtrans callback payload:', JSON.stringify(body).slice(0, 2000)); } catch(e){}
+    }
+
     // Midtrans typically sends these fields: order_id, status_code, gross_amount, transaction_status, signature_key
     const { order_id, status_code, gross_amount, transaction_status, signature_key } = body || {};
 
     if (!order_id || !status_code || typeof gross_amount === 'undefined' || !transaction_status) {
+      console.warn('Midtrans callback received invalid payload', { body });
       return NextResponse.json({ success: false, error: 'Invalid notification payload' }, { status: 400 });
     }
 
@@ -22,7 +28,14 @@ export async function POST(req: Request) {
     }
 
     // Verify signature: sha512(order_id + status_code + gross_amount + serverKey)
-    const computed = crypto.createHash('sha512').update(String(order_id) + String(status_code) + String(gross_amount) + serverKey).digest('hex');
+    let computed: string;
+    try {
+      computed = crypto.createHash('sha512').update(String(order_id) + String(status_code) + String(gross_amount) + serverKey).digest('hex');
+    } catch (e) {
+      console.error('Failed to compute signature', e);
+      return NextResponse.json({ success: false, error: 'Signature computation failed' }, { status: 500 });
+    }
+
     if (signature_key && signature_key !== computed) {
       console.error('Invalid Midtrans signature', { provided: signature_key, computed });
       return NextResponse.json({ success: false, error: 'Invalid signature' }, { status: 403 });
