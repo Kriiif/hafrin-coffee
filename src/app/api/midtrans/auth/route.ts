@@ -31,7 +31,7 @@ export async function POST(req: Request) {
         gross_amount: gross_amount
       },
       item_details: items || [],
-      customer_details: customer || {}
+      customer_details: customer || {},
     };
 
     const auth = Buffer.from(`${serverKey}:`).toString('base64');
